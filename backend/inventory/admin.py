@@ -1,0 +1,25 @@
+from django.contrib import admin
+
+from . import models
+
+admin.site.register(models.Branch)
+admin.site.register(models.User)
+admin.site.register(models.ActivityLog)
+admin.site.register(models.Category)
+admin.site.register(models.Product)
+admin.site.register(models.BranchStock)
+admin.site.register(models.StockMovement)
+admin.site.register(models.Supplier)
+admin.site.register(models.Purchase)
+admin.site.register(models.PurchaseItem)
+admin.site.register(models.Customer)
+admin.site.register(models.Sale)
+admin.site.register(models.SaleItem)
+admin.site.register(models.Payment)
+admin.site.register(models.SaleReturn)
+admin.site.register(models.SaleReturnItem)
+admin.site.register(models.TaxRate)
+admin.site.register(models.InvoiceDocument)
+admin.site.register(models.SupplierPayment)
+admin.site.register(models.ShopProfile)
+admin.site.register(models.Notification)

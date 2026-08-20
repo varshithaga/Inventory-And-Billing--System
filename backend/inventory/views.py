@@ -1,12 +1,16 @@
 from datetime import timedelta
 
+from django.conf import settings
 from django.http import FileResponse
 from django.utils import timezone
 from django.db.models import Sum, Count, F, Q
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token as google_id_token
 from rest_framework import viewsets, generics, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import (
     Branch,
@@ -51,6 +55,56 @@ class MeView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class GoogleLoginView(APIView):
+    """Exchange a Google Identity Services ID token for this app's own JWT
+    pair. The frontend never talks to Google's token endpoint directly — it
+    just gets an ID token from the "Sign in with Google" widget and posts it
+    here. We verify the token's signature/audience with Google, find-or-create
+    the matching User, and hand back the same {access, refresh} shape as
+    /auth/login/, so the rest of the app (refresh, auth headers) is unchanged.
+    """
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        credential = request.data.get("credential")
+        if not credential:
+            return Response({"detail": "Missing Google credential."}, status=status.HTTP_400_BAD_REQUEST)
+        if not settings.GOOGLE_OAUTH_CLIENT_ID:
+            return Response(
+                {"detail": "Google sign-in is not configured on the server."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        try:
+            payload = google_id_token.verify_oauth2_token(
+                credential, google_requests.Request(), settings.GOOGLE_OAUTH_CLIENT_ID
+            )
+        except ValueError:
+            return Response({"detail": "Invalid Google credential."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        email = payload.get("email")
+        if not email or not payload.get("email_verified"):
+            return Response(
+                {"detail": "Google account has no verified email address."}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        user, created = User.objects.get_or_create(
+            username=email,
+            defaults={
+                "email": email,
+                "first_name": payload.get("given_name", ""),
+                "last_name": payload.get("family_name", ""),
+            },
+        )
+        if created:
+            user.set_unusable_password()
+            user.save(update_fields=["password"])
+
+        refresh = RefreshToken.for_user(user)
+        return Response({"access": str(refresh.access_token), "refresh": str(refresh)})
 
 
 class UserViewSet(viewsets.ModelViewSet):

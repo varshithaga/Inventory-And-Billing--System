@@ -11,6 +11,8 @@ import BillingPage from "./pages/Billing/BillingPage";
 import SalesPage from "./pages/Sales/SalesPage";
 import CustomersPage from "./pages/Customers/CustomersPage";
 import UserManagement from "./pages/UserManagement/UserManagement";
+import StockPage from "./pages/Stock/StockPage";
+import SettingsPage from "./pages/Settings/SettingsPage";
 
 export default function App() {
   return (
@@ -30,11 +32,13 @@ export default function App() {
             <Route path="billing" element={<BillingPage />} />
             <Route path="sales" element={<SalesPage />} />
             <Route path="products" element={<ProductsPage />} />
+            <Route path="stock" element={<StockPage />} />
             <Route path="purchases" element={<PurchasesPage />} />
             <Route path="suppliers" element={<SuppliersPage />} />
             <Route path="customers" element={<CustomersPage />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="user-management" element={<UserManagement />} />
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>
       </AuthProvider>

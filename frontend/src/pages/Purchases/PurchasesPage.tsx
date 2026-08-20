@@ -22,13 +22,13 @@ export default function PurchasesPage() {
   const [error, setError] = useState("");
 
   const loadPurchases = () => {
-    fetchPurchases().then(setPurchases);
+    fetchPurchases().then((res: any) => setPurchases(Array.isArray(res) ? res : res.results || []));
   };
 
   useEffect(() => {
     loadPurchases();
-    fetchPurchaseProducts().then(setProducts);
-    fetchPurchaseSuppliers().then(setSuppliers);
+    fetchPurchaseProducts().then((res: any) => setProducts(Array.isArray(res) ? res : res.results || []));
+    fetchPurchaseSuppliers().then((res: any) => setSuppliers(Array.isArray(res) ? res : res.results || []));
   }, []);
 
   const updateItem = (index: number, field: keyof PurchaseItemForm, value: string) => {
@@ -109,99 +109,16 @@ export default function PurchasesPage() {
           </div>
 
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => setShowForm(true)}
             className="group flex items-center gap-2.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold px-5 py-3.5 rounded-2xl shadow-xl shadow-violet-600/40 transition-all duration-200 transform hover:-translate-y-0.5 shrink-0"
           >
             <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
             </svg>
-            <span>{showForm ? "Close Form" : "New Purchase Order"}</span>
+            <span>New Purchase Order</span>
           </button>
         </div>
       </div>
-
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-violet-200/80 shadow-2xl shadow-violet-100/60 p-7 space-y-5">
-          <h2 className="text-base font-extrabold text-violet-950 border-b border-violet-100 pb-3 flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-violet-600" />
-            Create Purchase Order
-          </h2>
-
-          {error && <div className="text-xs font-bold text-rose-800 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3">{error}</div>}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
-            <div>
-              <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">Supplier *</label>
-              <select required value={supplier} onChange={(e) => setSupplier(e.target.value)} className="w-full text-sm font-extrabold border border-violet-200 rounded-xl px-3.5 py-2.5 bg-white text-violet-950 focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500">
-                <option value="">Select supplier</option>
-                {suppliers.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">Purchase Date</label>
-              <input type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} className="w-full text-sm border border-violet-200 rounded-xl px-3.5 py-2.5 bg-violet-50/40 focus:bg-white focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 font-semibold" />
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider">Purchase Line Items</label>
-            {items.map((item, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-violet-50/40 p-3 rounded-2xl border border-violet-100">
-                <div className="md:col-span-4">
-                  <select
-                    value={item.product}
-                    onChange={(e) => updateItem(index, "product", e.target.value)}
-                    className="w-full text-sm font-semibold border border-violet-200 rounded-xl px-3 py-2 bg-white text-violet-950"
-                  >
-                    <option value="">Select product</option>
-                    {products.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="md:col-span-2">
-                  <input
-                    type="number" step="0.01" placeholder="Qty" value={item.quantity}
-                    onChange={(e) => updateItem(index, "quantity", e.target.value)}
-                    className="w-full text-sm font-semibold border border-violet-200 rounded-xl px-3 py-2 bg-white"
-                  />
-                </div>
-                <div className="md:col-span-3">
-                  <input
-                    type="number" step="0.01" placeholder="Purchase Price ₹" value={item.purchase_price}
-                    onChange={(e) => updateItem(index, "purchase_price", e.target.value)}
-                    className="w-full text-sm font-semibold border border-violet-200 rounded-xl px-3 py-2 bg-white"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <input
-                    type="number" step="0.01" placeholder="GST %" value={item.gst_rate}
-                    onChange={(e) => updateItem(index, "gst_rate", e.target.value)}
-                    className="w-full text-sm font-semibold border border-violet-200 rounded-xl px-3 py-2 bg-white"
-                  />
-                </div>
-                <div className="md:col-span-1 text-right">
-                  <button type="button" onClick={() => removeRow(index)} className="p-1 text-rose-600 hover:text-rose-800 font-bold text-xs">Remove</button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <button type="button" onClick={addRow} className="text-xs font-bold text-violet-700 hover:text-purple-800 bg-violet-100 px-3.5 py-2 rounded-xl border border-violet-200 transition">+ Add Item Row</button>
-
-          <div className="flex items-center justify-between border-t border-violet-100 pt-4">
-            <div className="text-sm font-semibold text-violet-900">
-              Estimated Order Total: <span className="text-lg font-black text-violet-950 ml-1">₹{total.toFixed(2)}</span>
-            </div>
-            <button type="submit" className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 rounded-xl shadow-md transition">
-              Save Purchase
-            </button>
-          </div>
-        </form>
-      )}
 
       {/* Table */}
       <div className="bg-white rounded-3xl border border-violet-200/80 shadow-2xl shadow-violet-100/60 overflow-hidden">
@@ -239,6 +156,121 @@ export default function PurchasesPage() {
           </table>
         </div>
       </div>
+
+      {/* CREATE PURCHASE MODAL POPUP */}
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-purple-950/75 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-violet-200 overflow-hidden transform transition-all my-8 animate-fade-in">
+            <div className="bg-gradient-to-r from-purple-950 via-violet-900 to-indigo-950 text-white px-7 py-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="p-2.5 bg-violet-600/30 text-violet-300 rounded-2xl border border-violet-500/30">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
+                  </svg>
+                </span>
+                <div>
+                  <h2 className="text-lg font-extrabold text-white">Create Purchase Order</h2>
+                  <p className="text-xs text-violet-200">Record inventory purchase order and itemized costs.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={resetForm}
+                className="text-violet-300 hover:text-white transition p-1.5 rounded-xl hover:bg-violet-800"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-7 space-y-5 max-h-[75vh] overflow-y-auto">
+              {error && <div className="text-xs font-bold text-rose-800 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3">{error}</div>}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">Supplier *</label>
+                  <select required value={supplier} onChange={(e) => setSupplier(e.target.value)} className="w-full text-sm font-extrabold border border-violet-200 rounded-xl px-3.5 py-2.5 bg-white text-violet-950 focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500">
+                    <option value="">Select supplier</option>
+                    {suppliers.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">Purchase Date</label>
+                  <input type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} className="w-full text-sm border border-violet-200 rounded-xl px-3.5 py-2.5 bg-violet-50/40 focus:bg-white focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 font-semibold" />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider">Purchase Line Items</label>
+                {items.map((item, index) => (
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-violet-50/40 p-3 rounded-2xl border border-violet-100">
+                    <div className="md:col-span-4">
+                      <select
+                        value={item.product}
+                        onChange={(e) => updateItem(index, "product", e.target.value)}
+                        className="w-full text-sm font-semibold border border-violet-200 rounded-xl px-3 py-2 bg-white text-violet-950"
+                      >
+                        <option value="">Select product</option>
+                        {products.map((p) => (
+                          <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="md:col-span-2">
+                      <input
+                        type="number" step="0.01" placeholder="Qty" value={item.quantity}
+                        onChange={(e) => updateItem(index, "quantity", e.target.value)}
+                        className="w-full text-sm font-semibold border border-violet-200 rounded-xl px-3 py-2 bg-white"
+                      />
+                    </div>
+                    <div className="md:col-span-3">
+                      <input
+                        type="number" step="0.01" placeholder="Purchase Price ₹" value={item.purchase_price}
+                        onChange={(e) => updateItem(index, "purchase_price", e.target.value)}
+                        className="w-full text-sm font-semibold border border-violet-200 rounded-xl px-3 py-2 bg-white"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <input
+                        type="number" step="0.01" placeholder="GST %" value={item.gst_rate}
+                        onChange={(e) => updateItem(index, "gst_rate", e.target.value)}
+                        className="w-full text-sm font-semibold border border-violet-200 rounded-xl px-3 py-2 bg-white"
+                      />
+                    </div>
+                    <div className="md:col-span-1 text-right">
+                      <button type="button" onClick={() => removeRow(index)} className="p-1 text-rose-600 hover:text-rose-800 font-bold text-xs">Remove</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button type="button" onClick={addRow} className="text-xs font-bold text-violet-700 hover:text-purple-800 bg-violet-100 px-3.5 py-2 rounded-xl border border-violet-200 transition">+ Add Item Row</button>
+
+              <div className="flex items-center justify-between border-t border-violet-100 pt-4">
+                <div className="text-sm font-semibold text-violet-900">
+                  Estimated Total: <span className="text-lg font-black text-violet-950 ml-1">₹{total.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="px-5 py-2.5 text-sm font-bold text-violet-800 hover:bg-violet-100 rounded-xl transition"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 rounded-xl shadow-lg shadow-violet-600/30 transition">
+                    Save Purchase Order
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

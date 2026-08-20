@@ -261,9 +261,14 @@ export interface DashboardSummary {
 
 // -- Generic API helpers ----------------------------------------------------
 
+// Matches backend Pagination (rest_framework.pagination.PageNumberPagination
+// subclass): next/previous are page numbers (not URLs), page_size defaults
+// to 10, max_page_size is 500.
 export interface PaginatedResponse<T> {
   count: number;
-  next: string | null;
-  previous: string | null;
+  next: number | null;
+  previous: number | null;
+  current_page: number;
+  total_pages: number;
   results: T[];
 }

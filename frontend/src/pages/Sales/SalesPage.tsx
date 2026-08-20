@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Pagination from "../../components/Pagination";
 import { openInvoicePdf } from "../../utils/downloadInvoice";
 import type { Sale, SaleStatus } from "../../types";
 import { fetchSales } from "./api";
@@ -6,13 +8,26 @@ import { fetchSales } from "./api";
 export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [statusFilter, setStatusFilter] = useState<SaleStatus | "">("");
+  const [page, setPage] = useState(1);
+  const [count, setCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrevious, setHasPrevious] = useState(false);
+  const navigate = useNavigate();
 
-  const loadSales = (status: SaleStatus | "" = "") => {
-    fetchSales(status).then(setSales);
+  const loadSales = (status: SaleStatus | "" = "", p = 1) => {
+    fetchSales(status, p).then((res) => {
+      setSales(res.results);
+      setPage(res.current_page);
+      setCount(res.count);
+      setTotalPages(res.total_pages);
+      setHasNext(res.next !== null);
+      setHasPrevious(res.previous !== null);
+    });
   };
 
   useEffect(() => {
-    loadSales(statusFilter);
+    loadSales(statusFilter, 1);
   }, [statusFilter]);
 
   return (
@@ -40,17 +55,27 @@ export default function SalesPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as SaleStatus | "")}
-              className="text-sm font-extrabold border border-violet-700/60 rounded-2xl px-4 py-3 bg-violet-900/60 text-white focus:outline-none focus:ring-2 focus:ring-violet-500 transition cursor-pointer backdrop-blur-sm"
+              className="text-sm font-extrabold border border-violet-700/60 rounded-2xl px-4 py-3.5 bg-violet-900/60 text-white focus:outline-none focus:ring-2 focus:ring-violet-500 transition cursor-pointer backdrop-blur-sm"
             >
               <option value="">All Statuses</option>
               <option value="completed">Completed Sales</option>
               <option value="draft">Held / Draft Bills</option>
               <option value="cancelled">Cancelled Sales</option>
             </select>
+
+            <button
+              onClick={() => navigate("/billing")}
+              className="group flex items-center gap-2.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold px-5 py-3.5 rounded-2xl shadow-xl shadow-violet-600/40 transition-all duration-200 transform hover:-translate-y-0.5"
+            >
+              <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>+ New Sale (POS Checkout)</span>
+            </button>
           </div>
         </div>
       </div>
@@ -114,6 +139,14 @@ export default function SalesPage() {
             </tbody>
           </table>
         </div>
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          count={count}
+          hasNext={hasNext}
+          hasPrevious={hasPrevious}
+          onPageChange={(p) => loadSales(statusFilter, p)}
+        />
       </div>
     </div>
   );

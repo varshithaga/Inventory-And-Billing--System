@@ -1,8 +1,10 @@
 import { useEffect, useState, useMemo, type FormEvent } from "react";
+import Pagination from "../../components/Pagination";
 import type { Branch, User, UserRole } from "../../types";
 import {
   createUser,
   deleteUser,
+  fetchAllUsers,
   fetchBranches,
   fetchUsers,
   updateUser,
@@ -17,9 +19,15 @@ interface ToastNotification {
 
 export default function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [count, setCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrevious, setHasPrevious] = useState(false);
 
   // Search & Filter state
   const [search, setSearch] = useState("");
@@ -67,20 +75,28 @@ export default function UserManagement() {
     }, 4000);
   };
 
-  const loadData = async () => {
+  const loadData = async (p = 1) => {
     setLoading(true);
     setError(null);
     try {
-      const [usersData, branchesData] = await Promise.all([
-        fetchUsers({
-          search,
-          role: roleFilter,
-          branch: branchFilter,
-          is_active: statusFilter,
-        }),
+      const filters = {
+        search,
+        role: roleFilter,
+        branch: branchFilter,
+        is_active: statusFilter,
+      };
+      const [usersPage, allUsersData, branchesData] = await Promise.all([
+        fetchUsers({ ...filters, page: p }),
+        fetchAllUsers(filters),
         fetchBranches(),
       ]);
-      setUsers(usersData);
+      setUsers(usersPage.results);
+      setPage(usersPage.current_page);
+      setCount(usersPage.count);
+      setTotalPages(usersPage.total_pages);
+      setHasNext(usersPage.next !== null);
+      setHasPrevious(usersPage.previous !== null);
+      setAllUsers(allUsersData);
       setBranches(branchesData);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to load user data.";
@@ -92,18 +108,19 @@ export default function UserManagement() {
   };
 
   useEffect(() => {
-    loadData();
+    loadData(1);
   }, [search, roleFilter, branchFilter, statusFilter]);
 
-  // Statistics calculation
+  // Statistics calculation — derived from the full filtered set (allUsers),
+  // not just the current page, so the KPI cards reflect the whole result set.
   const stats = useMemo(() => {
-    const total = users.length;
-    const active = users.filter((u) => u.is_active !== false).length;
-    const admins = users.filter((u) => u.role === "admin").length;
-    const managers = users.filter((u) => u.role === "manager").length;
-    const staff = users.filter((u) => u.role === "staff").length;
+    const total = count;
+    const active = allUsers.filter((u) => u.is_active !== false).length;
+    const admins = allUsers.filter((u) => u.role === "admin").length;
+    const managers = allUsers.filter((u) => u.role === "manager").length;
+    const staff = allUsers.filter((u) => u.role === "staff").length;
     return { total, active, admins, managers, staff };
-  }, [users]);
+  }, [allUsers, count]);
 
   // Open Create Modal
   const handleOpenCreate = () => {
@@ -182,7 +199,7 @@ export default function UserManagement() {
       }
 
       setShowModal(false);
-      loadData();
+      loadData(page);
     } catch (err: any) {
       const respData = err?.response?.data;
       if (respData && typeof respData === "object") {
@@ -235,7 +252,7 @@ export default function UserManagement() {
     try {
       await updateUser(user.id, { is_active: newStatus });
       addToast(`User '${user.username}' is now ${newStatus ? "Active" : "Inactive"}.`);
-      loadData();
+      loadData(page);
     } catch {
       addToast(`Failed to update status for '${user.username}'.`, "error");
     }
@@ -249,7 +266,7 @@ export default function UserManagement() {
       await deleteUser(deletingUser.id);
       addToast(`User '${deletingUser.username}' deleted.`);
       setDeletingUser(null);
-      loadData();
+      loadData(page);
     } catch {
       addToast(`Failed to delete user '${deletingUser.username}'.`, "error");
     } finally {
@@ -372,7 +389,7 @@ export default function UserManagement() {
 
           <div className="flex items-center gap-3 shrink-0">
             <button
-              onClick={loadData}
+              onClick={() => loadData(page)}
               title="Refresh User List"
               className="p-3 text-violet-200 hover:text-white bg-violet-900/60 hover:bg-violet-800/80 border border-violet-700/60 rounded-2xl transition backdrop-blur-sm"
             >
@@ -561,7 +578,7 @@ export default function UserManagement() {
             </svg>
             <span>{error}</span>
           </div>
-          <button onClick={loadData} className="px-3 py-1 bg-rose-600 text-white font-bold rounded-lg text-xs hover:bg-rose-700 transition">
+          <button onClick={() => loadData(page)} className="px-3 py-1 bg-rose-600 text-white font-bold rounded-lg text-xs hover:bg-rose-700 transition">
             Retry Loading
           </button>
         </div>
@@ -797,6 +814,14 @@ export default function UserManagement() {
             </tbody>
           </table>
         </div>
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          count={count}
+          hasNext={hasNext}
+          hasPrevious={hasPrevious}
+          onPageChange={loadData}
+        />
       </div>
 
       {/* Role Permission Legend Card - Dark Violet Gradient */}

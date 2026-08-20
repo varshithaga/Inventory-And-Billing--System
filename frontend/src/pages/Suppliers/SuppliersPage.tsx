@@ -20,7 +20,7 @@ export default function SuppliersPage() {
   const [error, setError] = useState("");
 
   const loadSuppliers = () => {
-    fetchSuppliers().then(setSuppliers);
+    fetchSuppliers().then((res: any) => setSuppliers(Array.isArray(res) ? res : res.results || []));
   };
 
   useEffect(loadSuppliers, []);
@@ -64,65 +64,16 @@ export default function SuppliersPage() {
           </div>
 
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => setShowForm(true)}
             className="group flex items-center gap-2.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold px-5 py-3.5 rounded-2xl shadow-xl shadow-violet-600/40 transition-all duration-200 transform hover:-translate-y-0.5 shrink-0"
           >
             <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
             </svg>
-            <span>{showForm ? "Close Form" : "Add New Supplier"}</span>
+            <span>Add New Supplier</span>
           </button>
         </div>
       </div>
-
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-violet-200/80 shadow-2xl shadow-violet-100/60 p-7 space-y-4">
-          <h2 className="text-base font-extrabold text-violet-950 border-b border-violet-100 pb-3 flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-violet-600" />
-            Create Vendor Entry
-          </h2>
-
-          {error && <div className="text-xs font-bold text-rose-800 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3">{error}</div>}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">Supplier Name *</label>
-              <input placeholder="Company / Vendor Name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full text-sm border border-violet-200 rounded-xl px-3.5 py-2.5 bg-violet-50/40 focus:bg-white focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 font-semibold" />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">Contact Person</label>
-              <input placeholder="Manager / Rep" value={form.contact_person} onChange={(e) => setForm({ ...form, contact_person: e.target.value })} className="w-full text-sm border border-violet-200 rounded-xl px-3.5 py-2.5 bg-violet-50/40 focus:bg-white focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 font-semibold" />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">Phone</label>
-              <input placeholder="+91 98765 43210" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full text-sm border border-violet-200 rounded-xl px-3.5 py-2.5 bg-violet-50/40 focus:bg-white focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 font-semibold" />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">Email</label>
-              <input placeholder="vendor@example.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full text-sm border border-violet-200 rounded-xl px-3.5 py-2.5 bg-violet-50/40 focus:bg-white focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 font-semibold" />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">GSTIN</label>
-              <input placeholder="GSTIN Number" value={form.gstin} onChange={(e) => setForm({ ...form, gstin: e.target.value })} className="w-full text-sm border border-violet-200 rounded-xl px-3.5 py-2.5 bg-violet-50/40 focus:bg-white focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 font-semibold" />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">Address</label>
-              <input placeholder="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full text-sm border border-violet-200 rounded-xl px-3.5 py-2.5 bg-violet-50/40 focus:bg-white focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 font-semibold" />
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-2">
-            <button type="submit" className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 rounded-xl shadow-md transition">
-              Save Supplier
-            </button>
-          </div>
-        </form>
-      )}
 
       {/* Table */}
       <div className="bg-white rounded-3xl border border-violet-200/80 shadow-2xl shadow-violet-100/60 overflow-hidden">
@@ -154,6 +105,85 @@ export default function SuppliersPage() {
           </table>
         </div>
       </div>
+
+      {/* CREATE SUPPLIER MODAL POPUP */}
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-purple-950/75 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-xl w-full shadow-2xl border border-violet-200 overflow-hidden transform transition-all my-8 animate-fade-in">
+            <div className="bg-gradient-to-r from-purple-950 via-violet-900 to-indigo-950 text-white px-7 py-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="p-2.5 bg-violet-600/30 text-violet-300 rounded-2xl border border-violet-500/30">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a2 2 0 012-2h2a2 2 0 012 2v5m-4 0h4" />
+                  </svg>
+                </span>
+                <div>
+                  <h2 className="text-lg font-extrabold text-white">Create Vendor Entry</h2>
+                  <p className="text-xs text-violet-200">Set up vendor contact person, email, and corporate GSTIN.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="text-violet-300 hover:text-white transition p-1.5 rounded-xl hover:bg-violet-800"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-7 space-y-4">
+              {error && <div className="text-xs font-bold text-rose-800 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3">{error}</div>}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">Supplier / Company Name *</label>
+                  <input placeholder="Company / Vendor Name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full text-sm border border-violet-200 rounded-xl px-3.5 py-2.5 bg-violet-50/40 focus:bg-white focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 font-semibold" />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">Contact Person</label>
+                  <input placeholder="Manager / Rep Name" value={form.contact_person} onChange={(e) => setForm({ ...form, contact_person: e.target.value })} className="w-full text-sm border border-violet-200 rounded-xl px-3.5 py-2.5 bg-violet-50/40 focus:bg-white focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 font-semibold" />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">Phone Number</label>
+                  <input placeholder="+91 98765 43210" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full text-sm border border-violet-200 rounded-xl px-3.5 py-2.5 bg-violet-50/40 focus:bg-white focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 font-semibold" />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">Email Address</label>
+                  <input placeholder="vendor@example.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full text-sm border border-violet-200 rounded-xl px-3.5 py-2.5 bg-violet-50/40 focus:bg-white focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 font-semibold" />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">GSTIN</label>
+                  <input placeholder="GSTIN Number" value={form.gstin} onChange={(e) => setForm({ ...form, gstin: e.target.value })} className="w-full text-sm border border-violet-200 rounded-xl px-3.5 py-2.5 bg-violet-50/40 focus:bg-white focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 font-semibold" />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">Corporate Address</label>
+                  <input placeholder="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full text-sm border border-violet-200 rounded-xl px-3.5 py-2.5 bg-violet-50/40 focus:bg-white focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 font-semibold" />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-violet-100">
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-5 py-2.5 text-sm font-bold text-violet-800 hover:bg-violet-100 rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 rounded-xl shadow-lg shadow-violet-600/30 transition">
+                  Save Supplier
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,14 +1,17 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const googleButtonRef = useRef<HTMLDivElement>(null);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -23,6 +26,54 @@ export default function LoginPage() {
       setSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || !googleButtonRef.current) return;
+
+    const handleGoogleCredential = async (response: GoogleCredentialResponse) => {
+      setError("");
+      setSubmitting(true);
+      try {
+        await loginWithGoogle(response.credential);
+        navigate("/", { replace: true });
+      } catch {
+        setError("Google sign-in failed. Please try again.");
+      } finally {
+        setSubmitting(false);
+      }
+    };
+
+    const initializeGoogleButton = () => {
+      if (!window.google || !googleButtonRef.current) return;
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredential,
+      });
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: "outline",
+        size: "large",
+        width: 336,
+        text: "signin_with",
+      });
+    };
+
+    if (window.google) {
+      initializeGoogleButton();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = initializeGoogleButton;
+    document.head.appendChild(script);
+
+    return () => {
+      document.head.removeChild(script);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-950 via-violet-900 to-indigo-950 font-sans p-4 relative overflow-hidden">
@@ -87,6 +138,17 @@ export default function LoginPage() {
             )}
           </button>
         </form>
+
+        {GOOGLE_CLIENT_ID && (
+          <>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-violet-200" />
+              <span className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">Or</span>
+              <div className="flex-1 h-px bg-violet-200" />
+            </div>
+            <div ref={googleButtonRef} className="flex justify-center" />
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,9 +1,16 @@
+import os
 from pathlib import Path
 from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = "django-insecure-change-me-in-production"
+
+# OAuth client ID for "Sign in with Google" (Google Identity Services). Create
+# one at https://console.cloud.google.com/apis/credentials and set it as an
+# env var — it's used to verify the audience of the ID token Google sends us,
+# so it must match the client ID configured on the frontend.
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "")
 
 DEBUG = True
 
@@ -89,8 +96,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 25,
+    "DEFAULT_PAGINATION_CLASS": "inventory.pagination.Pagination",
 }
 
 SIMPLE_JWT = {

@@ -1,17 +1,26 @@
 import api from "../../api/client";
 import type { Customer, PaginatedResponse, PaymentMode, Product, Sale, SaleStatus } from "../../types";
 
+// The POS product/customer pickers filter client-side as the cashier types,
+// so they need every row in one shot, not just page 1 — pull up to the
+// backend's max_page_size instead of paginating them.
+const LOOKUP_LIMIT = 500;
+
 function unwrap<T>(data: PaginatedResponse<T> | T[]): T[] {
   return Array.isArray(data) ? data : data.results;
 }
 
 export async function fetchBillingProducts(): Promise<Product[]> {
-  const res = await api.get<PaginatedResponse<Product> | Product[]>("/products/");
+  const res = await api.get<PaginatedResponse<Product> | Product[]>("/products/", {
+    params: { limit: LOOKUP_LIMIT },
+  });
   return unwrap(res.data);
 }
 
 export async function fetchBillingCustomers(): Promise<Customer[]> {
-  const res = await api.get<PaginatedResponse<Customer> | Customer[]>("/customers/");
+  const res = await api.get<PaginatedResponse<Customer> | Customer[]>("/customers/", {
+    params: { limit: LOOKUP_LIMIT },
+  });
   return unwrap(res.data);
 }
 

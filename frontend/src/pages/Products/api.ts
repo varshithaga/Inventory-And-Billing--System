@@ -1,19 +1,25 @@
 import api from "../../api/client";
 import type { Category, PaginatedResponse, Product } from "../../types";
 
+// Dropdown/lookup fetches need every row in one shot, not just page 1 — pull
+// up to the backend's max_page_size instead of paginating them.
+const LOOKUP_LIMIT = 500;
+
 function unwrap<T>(data: PaginatedResponse<T> | T[]): T[] {
   return Array.isArray(data) ? data : data.results;
 }
 
-export async function fetchProducts(search = ""): Promise<Product[]> {
-  const res = await api.get<PaginatedResponse<Product> | Product[]>("/products/", {
-    params: search ? { search } : {},
+export async function fetchProducts(search = "", page = 1): Promise<PaginatedResponse<Product>> {
+  const res = await api.get<PaginatedResponse<Product>>("/products/", {
+    params: { ...(search ? { search } : {}), page },
   });
-  return unwrap(res.data);
+  return res.data;
 }
 
 export async function fetchCategories(): Promise<Category[]> {
-  const res = await api.get<PaginatedResponse<Category> | Category[]>("/categories/");
+  const res = await api.get<PaginatedResponse<Category> | Category[]>("/categories/", {
+    params: { limit: LOOKUP_LIMIT },
+  });
   return unwrap(res.data);
 }
 

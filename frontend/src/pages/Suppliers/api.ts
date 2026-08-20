@@ -1,13 +1,9 @@
 import api from "../../api/client";
 import type { PaginatedResponse, Supplier } from "../../types";
 
-function unwrap<T>(data: PaginatedResponse<T> | T[]): T[] {
-  return Array.isArray(data) ? data : data.results;
-}
-
-export async function fetchSuppliers(): Promise<Supplier[]> {
-  const res = await api.get<PaginatedResponse<Supplier> | Supplier[]>("/suppliers/");
-  return unwrap(res.data);
+export async function fetchSuppliers(page = 1): Promise<PaginatedResponse<Supplier>> {
+  const res = await api.get<PaginatedResponse<Supplier>>("/suppliers/", { params: { page } });
+  return res.data;
 }
 
 export interface SupplierPayload {

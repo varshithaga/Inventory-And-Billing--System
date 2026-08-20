@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../api/client";
-import { openInvoicePdf } from "../utils/downloadInvoice";
-import type { Customer, PaginatedResponse, PaymentMode, Product, Sale, SaleStatus } from "../types";
+import { openInvoicePdf } from "../../utils/downloadInvoice";
+import type { Customer, PaymentMode, Product, Sale, SaleStatus } from "../../types";
+import { createSale, fetchBillingCustomers, fetchBillingProducts } from "./api";
 
 interface CartItem {
   product: number;
@@ -16,10 +16,6 @@ interface CartItem {
 interface PaymentRow {
   mode: PaymentMode;
   amount: string;
-}
-
-function unwrap<T>(data: PaginatedResponse<T> | T[]): T[] {
-  return Array.isArray(data) ? data : data.results;
 }
 
 export default function BillingPage() {
@@ -36,8 +32,8 @@ export default function BillingPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get<PaginatedResponse<Product> | Product[]>("/products/").then((res) => setProducts(unwrap(res.data)));
-    api.get<PaginatedResponse<Customer> | Customer[]>("/customers/").then((res) => setCustomers(unwrap(res.data)));
+    fetchBillingProducts().then(setProducts);
+    fetchBillingCustomers().then(setCustomers);
   }, []);
 
   const filteredProducts = useMemo(() => {
@@ -104,7 +100,7 @@ export default function BillingPage() {
     }
     setSubmitting(true);
     try {
-      const res = await api.post<Sale>("/sales/", {
+      const sale = await createSale({
         customer: customer || null,
         status,
         payment_mode: payments.length > 1 ? "split" : paymentMode,
@@ -117,7 +113,7 @@ export default function BillingPage() {
         payments_input:
           status === "completed" ? payments.filter((p) => Number(p.amount) > 0).map((p) => ({ mode: p.mode, amount: p.amount })) : [],
       });
-      setSuccess(res.data);
+      setSuccess(sale);
       setCart([]);
       setPayments([{ mode: "cash", amount: "" }]);
       setCustomer("");

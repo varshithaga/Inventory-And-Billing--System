@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import api, { tokenStore } from "../api/client";
+import api from "../api/client";
+import { clearTokens, getAccessToken, setTokens } from "../api/access";
 import type { User } from "../types";
 
 interface AuthContextValue {
@@ -17,7 +18,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const loadUser = async () => {
-      if (!tokenStore.getAccess()) {
+      if (!getAccessToken()) {
         setLoading(false);
         return;
       }
@@ -25,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const res = await api.get<User>("/auth/me/");
         setUser(res.data);
       } catch {
-        tokenStore.clear();
+        clearTokens();
       } finally {
         setLoading(false);
       }
@@ -35,14 +36,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (username: string, password: string): Promise<User> => {
     const res = await api.post("/auth/login/", { username, password });
-    tokenStore.setTokens(res.data.access, res.data.refresh);
+    setTokens(res.data.access, res.data.refresh);
     const me = await api.get<User>("/auth/me/");
     setUser(me.data);
     return me.data;
   };
 
   const logout = () => {
-    tokenStore.clear();
+    clearTokens();
     setUser(null);
   };
 

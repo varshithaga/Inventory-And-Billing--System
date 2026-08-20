@@ -84,96 +84,160 @@ export default function PurchasesPage() {
   }, 0);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-800">Purchases</h1>
-        <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded">
-          {showForm ? "Close" : "+ New Purchase"}
-        </button>
+    <div className="space-y-6 pb-16 font-sans">
+      {/* Hero Banner Header */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-purple-950 via-violet-900 to-indigo-950 p-8 rounded-3xl shadow-2xl text-white border border-violet-800/60">
+        <div className="absolute -right-16 -top-16 w-72 h-72 bg-purple-500/25 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -left-16 -bottom-16 w-72 h-72 bg-violet-500/25 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-3">
+              <span className="p-3 bg-gradient-to-tr from-purple-600 via-violet-600 to-indigo-400 text-white rounded-2xl shadow-lg shadow-purple-600/40">
+                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
+                </svg>
+              </span>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-violet-300">Procurement & Orders</span>
+                <h1 className="text-3xl font-black tracking-tight text-white">Purchase Orders</h1>
+              </div>
+            </div>
+            <p className="text-sm text-violet-100/90 mt-2 max-w-2xl leading-relaxed">
+              Record stock replenishment orders, supplier Invoices, itemized costs, GST tax breakdown, and payables.
+            </p>
+          </div>
+
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="group flex items-center gap-2.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold px-5 py-3.5 rounded-2xl shadow-xl shadow-violet-600/40 transition-all duration-200 transform hover:-translate-y-0.5 shrink-0"
+          >
+            <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+            </svg>
+            <span>{showForm ? "Close Form" : "New Purchase Order"}</span>
+          </button>
+        </div>
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-4">
-          {error && <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</div>}
+        <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-violet-200/80 shadow-2xl shadow-violet-100/60 p-7 space-y-5">
+          <h2 className="text-base font-extrabold text-violet-950 border-b border-violet-100 pb-3 flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-violet-600" />
+            Create Purchase Order
+          </h2>
 
-          <div className="grid grid-cols-2 gap-3 max-w-md">
-            <select required value={supplier} onChange={(e) => setSupplier(e.target.value)} className="border rounded px-3 py-2 text-sm">
-              <option value="">Select supplier</option>
-              {suppliers.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-            <input type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} className="border rounded px-3 py-2 text-sm" />
+          {error && <div className="text-xs font-bold text-rose-800 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3">{error}</div>}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
+            <div>
+              <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">Supplier *</label>
+              <select required value={supplier} onChange={(e) => setSupplier(e.target.value)} className="w-full text-sm font-extrabold border border-violet-200 rounded-xl px-3.5 py-2.5 bg-white text-violet-950 focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500">
+                <option value="">Select supplier</option>
+                {suppliers.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">Purchase Date</label>
+              <input type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} className="w-full text-sm border border-violet-200 rounded-xl px-3.5 py-2.5 bg-violet-50/40 focus:bg-white focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 font-semibold" />
+            </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
+            <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider">Purchase Line Items</label>
             {items.map((item, index) => (
-              <div key={index} className="grid grid-cols-12 gap-2 items-center">
-                <select
-                  value={item.product}
-                  onChange={(e) => updateItem(index, "product", e.target.value)}
-                  className="col-span-4 border rounded px-2 py-2 text-sm"
-                >
-                  <option value="">Select product</option>
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
-                  ))}
-                </select>
-                <input
-                  type="number" step="0.01" placeholder="Qty" value={item.quantity}
-                  onChange={(e) => updateItem(index, "quantity", e.target.value)}
-                  className="col-span-2 border rounded px-2 py-2 text-sm"
-                />
-                <input
-                  type="number" step="0.01" placeholder="Purchase Price" value={item.purchase_price}
-                  onChange={(e) => updateItem(index, "purchase_price", e.target.value)}
-                  className="col-span-3 border rounded px-2 py-2 text-sm"
-                />
-                <input
-                  type="number" step="0.01" placeholder="GST %" value={item.gst_rate}
-                  onChange={(e) => updateItem(index, "gst_rate", e.target.value)}
-                  className="col-span-2 border rounded px-2 py-2 text-sm"
-                />
-                <button type="button" onClick={() => removeRow(index)} className="col-span-1 text-red-500 text-xs">Remove</button>
+              <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-violet-50/40 p-3 rounded-2xl border border-violet-100">
+                <div className="md:col-span-4">
+                  <select
+                    value={item.product}
+                    onChange={(e) => updateItem(index, "product", e.target.value)}
+                    className="w-full text-sm font-semibold border border-violet-200 rounded-xl px-3 py-2 bg-white text-violet-950"
+                  >
+                    <option value="">Select product</option>
+                    {products.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <input
+                    type="number" step="0.01" placeholder="Qty" value={item.quantity}
+                    onChange={(e) => updateItem(index, "quantity", e.target.value)}
+                    className="w-full text-sm font-semibold border border-violet-200 rounded-xl px-3 py-2 bg-white"
+                  />
+                </div>
+                <div className="md:col-span-3">
+                  <input
+                    type="number" step="0.01" placeholder="Purchase Price ₹" value={item.purchase_price}
+                    onChange={(e) => updateItem(index, "purchase_price", e.target.value)}
+                    className="w-full text-sm font-semibold border border-violet-200 rounded-xl px-3 py-2 bg-white"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <input
+                    type="number" step="0.01" placeholder="GST %" value={item.gst_rate}
+                    onChange={(e) => updateItem(index, "gst_rate", e.target.value)}
+                    className="w-full text-sm font-semibold border border-violet-200 rounded-xl px-3 py-2 bg-white"
+                  />
+                </div>
+                <div className="md:col-span-1 text-right">
+                  <button type="button" onClick={() => removeRow(index)} className="p-1 text-rose-600 hover:text-rose-800 font-bold text-xs">Remove</button>
+                </div>
               </div>
             ))}
           </div>
 
-          <button type="button" onClick={addRow} className="text-sm text-blue-600 font-medium">+ Add item</button>
+          <button type="button" onClick={addRow} className="text-xs font-bold text-violet-700 hover:text-purple-800 bg-violet-100 px-3.5 py-2 rounded-xl border border-violet-200 transition">+ Add Item Row</button>
 
-          <div className="flex items-center justify-between border-t pt-3">
-            <div className="text-sm text-gray-600">Estimated Total: <span className="font-semibold text-gray-800">₹{total.toFixed(2)}</span></div>
-            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded">Save Purchase</button>
+          <div className="flex items-center justify-between border-t border-violet-100 pt-4">
+            <div className="text-sm font-semibold text-violet-900">
+              Estimated Order Total: <span className="text-lg font-black text-violet-950 ml-1">₹{total.toFixed(2)}</span>
+            </div>
+            <button type="submit" className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 rounded-xl shadow-md transition">
+              Save Purchase
+            </button>
           </div>
         </form>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-gray-500 border-b bg-gray-50">
-              <th className="px-4 py-2">Date</th>
-              <th className="px-4 py-2">Supplier</th>
-              <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2 text-right">Total</th>
-              <th className="px-4 py-2 text-right">Balance Due</th>
-            </tr>
-          </thead>
-          <tbody>
-            {purchases.map((p) => (
-              <tr key={p.id} className="border-b last:border-0">
-                <td className="px-4 py-2">{p.purchase_date}</td>
-                <td className="px-4 py-2">{p.supplier_name}</td>
-                <td className="px-4 py-2 capitalize">{p.status.replace("_", " ")}</td>
-                <td className="px-4 py-2 text-right">₹{Number(p.total_amount).toFixed(2)}</td>
-                <td className="px-4 py-2 text-right text-red-600">₹{Number(p.balance_due).toFixed(2)}</td>
+      {/* Table */}
+      <div className="bg-white rounded-3xl border border-violet-200/80 shadow-2xl shadow-violet-100/60 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gradient-to-r from-purple-950 via-violet-900 to-indigo-950 text-violet-100 uppercase text-[11px] font-extrabold tracking-wider border-b border-violet-800/80">
+                <th className="px-6 py-4.5">Date</th>
+                <th className="px-6 py-4.5">Supplier</th>
+                <th className="px-6 py-4.5">Status</th>
+                <th className="px-6 py-4.5 text-right">Total Amount</th>
+                <th className="px-6 py-4.5 text-right">Balance Due</th>
               </tr>
-            ))}
-            {purchases.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400">No purchases yet.</td></tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-violet-100/60 text-sm">
+              {purchases.map((p) => (
+                <tr key={p.id} className="hover:bg-violet-50/60 transition-colors duration-150">
+                  <td className="px-6 py-4.5 font-mono text-xs font-bold text-violet-900">{p.purchase_date}</td>
+                  <td className="px-6 py-4.5 font-extrabold text-violet-950">{p.supplier_name}</td>
+                  <td className="px-6 py-4.5">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold bg-violet-100/80 text-violet-900 border border-violet-200 capitalize">
+                      {p.status.replace("_", " ")}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4.5 text-right font-black text-violet-950">₹{Number(p.total_amount).toFixed(2)}</td>
+                  <td className="px-6 py-4.5 text-right font-black text-rose-600">₹{Number(p.balance_due).toFixed(2)}</td>
+                </tr>
+              ))}
+              {purchases.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-violet-400 font-semibold italic">No purchase records found.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

@@ -15,6 +15,7 @@ router.register("purchases", views.PurchaseViewSet)
 router.register("customers", views.CustomerViewSet)
 router.register("sales", views.SaleViewSet)
 router.register("sale-returns", views.SaleReturnViewSet)
+router.register("users", views.UserViewSet)
 
 urlpatterns = [
     path("auth/login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),

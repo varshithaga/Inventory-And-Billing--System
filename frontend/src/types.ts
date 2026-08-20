@@ -21,6 +21,9 @@ export interface User {
   phone?: string;
   role: UserRole;
   branch?: number | null;
+  branch_name?: string | null;
+  is_active?: boolean;
+  date_joined?: string;
 }
 
 export interface Category {

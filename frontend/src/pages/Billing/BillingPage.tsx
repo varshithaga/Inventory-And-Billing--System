@@ -125,22 +125,46 @@ export default function BillingPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-xl font-bold text-gray-800">Billing / POS</h1>
+    <div className="space-y-6 pb-16 font-sans">
+      {/* Hero Banner Header */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-purple-950 via-violet-900 to-indigo-950 p-8 rounded-3xl shadow-2xl text-white border border-violet-800/60">
+        <div className="absolute -right-16 -top-16 w-72 h-72 bg-purple-500/25 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -left-16 -bottom-16 w-72 h-72 bg-violet-500/25 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-3">
+              <span className="p-3 bg-gradient-to-tr from-purple-600 via-violet-600 to-indigo-400 text-white rounded-2xl shadow-lg shadow-purple-600/40">
+                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              </span>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-violet-300">Point of Sale Terminal</span>
+                <h1 className="text-3xl font-black tracking-tight text-white">Billing & Checkout</h1>
+              </div>
+            </div>
+            <p className="text-sm text-violet-100/90 mt-2 max-w-2xl leading-relaxed">
+              Instant POS terminal: barcode lookup, live cart calculation, automatic GST computation, split payments, and instant invoice PDF receipts.
+            </p>
+          </div>
+        </div>
+      </div>
 
       {success && (
-        <div className="bg-green-50 border border-green-200 rounded px-4 py-3 flex items-center justify-between">
-          <span className="text-sm text-green-800">
-            Sale {success.invoice_number} completed — Total ₹{Number(success.total_amount).toFixed(2)}
+        <div className="bg-emerald-50 border border-emerald-300 rounded-2xl p-4 flex items-center justify-between text-sm shadow-md">
+          <span className="text-emerald-950 font-extrabold flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            Sale {success.invoice_number} completed successfully — Total ₹{Number(success.total_amount).toFixed(2)}
           </span>
           <div className="flex gap-3">
             <button
               onClick={() => openInvoicePdf(success.id, success.invoice_number)}
-              className="text-sm text-blue-600 font-medium"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm transition"
             >
-              Download Invoice PDF
+              Download PDF Invoice
             </button>
-            <button onClick={() => navigate("/sales")} className="text-sm text-gray-500">View Sales</button>
+            <button onClick={() => navigate("/sales")} className="px-4 py-2 bg-violet-100 text-violet-900 font-bold rounded-xl text-xs hover:bg-violet-200 transition">View All Sales</button>
           </div>
         </div>
       )}
@@ -152,71 +176,77 @@ export default function BillingPage() {
               placeholder="Search product by name, SKU, or barcode..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full border rounded px-3 py-2 text-sm"
+              className="w-full text-sm font-semibold border border-violet-200 rounded-2xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 shadow-md shadow-violet-100/40 text-violet-950 placeholder-violet-400"
             />
             {filteredProducts.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full bg-white border rounded shadow-lg max-h-64 overflow-y-auto">
+              <div className="absolute z-20 mt-2 w-full bg-white border border-violet-200 rounded-2xl shadow-2xl max-h-64 overflow-y-auto divide-y divide-violet-100">
                 {filteredProducts.map((p) => (
                   <button
                     key={p.id}
                     type="button"
                     onClick={() => addToCart(p)}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex justify-between"
+                    className="w-full text-left px-4 py-3 text-sm hover:bg-violet-50/70 flex justify-between items-center transition"
                   >
-                    <span>{p.name} <span className="text-gray-400">({p.sku})</span></span>
-                    <span className="text-gray-500">₹{Number(p.selling_price).toFixed(2)} · stock {p.stock_quantity}</span>
+                    <div>
+                      <span className="font-extrabold text-violet-950">{p.name}</span> <span className="text-violet-400 font-mono text-xs">({p.sku})</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-black text-purple-900">₹{Number(p.selling_price).toFixed(2)}</span>
+                      <span className="text-xs text-violet-400 block">Stock: {p.stock_quantity}</span>
+                    </div>
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="bg-white rounded-3xl border border-violet-200/80 shadow-2xl shadow-violet-100/60 overflow-hidden">
+            <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="text-left text-gray-500 border-b bg-gray-50">
-                  <th className="px-3 py-2">Product</th>
-                  <th className="px-3 py-2 w-24">Qty</th>
-                  <th className="px-3 py-2 w-28">Price</th>
-                  <th className="px-3 py-2 w-24">Discount</th>
-                  <th className="px-3 py-2 text-right">Line Total</th>
-                  <th className="px-3 py-2"></th>
+                <tr className="bg-gradient-to-r from-purple-950 via-violet-900 to-indigo-950 text-violet-100 uppercase text-[11px] font-extrabold tracking-wider border-b border-violet-800/80">
+                  <th className="px-4 py-3.5">Product</th>
+                  <th className="px-4 py-3.5 w-24">Qty</th>
+                  <th className="px-4 py-3.5 w-28">Price</th>
+                  <th className="px-4 py-3.5 w-24">Discount</th>
+                  <th className="px-4 py-3.5 text-right">Line Total</th>
+                  <th className="px-4 py-3.5 text-right"></th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-violet-100/60">
                 {cart.map((item) => {
                   const lineTotal = Number(item.quantity) * Number(item.unit_price) - Number(item.discount_amount || 0);
                   return (
-                    <tr key={item.product} className="border-b last:border-0">
-                      <td className="px-3 py-2">{item.name}</td>
-                      <td className="px-3 py-2">
-                        <input type="number" step="0.01" value={item.quantity} onChange={(e) => updateCartItem(item.product, "quantity", e.target.value)} className="w-20 border rounded px-2 py-1" />
+                    <tr key={item.product} className="hover:bg-violet-50/50 transition-colors">
+                      <td className="px-4 py-3 font-extrabold text-violet-950">{item.name}</td>
+                      <td className="px-4 py-3">
+                        <input type="number" step="0.01" value={item.quantity} onChange={(e) => updateCartItem(item.product, "quantity", e.target.value)} className="w-20 border border-violet-200 rounded-xl px-2 py-1 text-sm font-semibold bg-violet-50/40 focus:bg-white" />
                       </td>
-                      <td className="px-3 py-2">
-                        <input type="number" step="0.01" value={item.unit_price} onChange={(e) => updateCartItem(item.product, "unit_price", e.target.value)} className="w-24 border rounded px-2 py-1" />
+                      <td className="px-4 py-3">
+                        <input type="number" step="0.01" value={item.unit_price} onChange={(e) => updateCartItem(item.product, "unit_price", e.target.value)} className="w-24 border border-violet-200 rounded-xl px-2 py-1 text-sm font-semibold bg-violet-50/40 focus:bg-white" />
                       </td>
-                      <td className="px-3 py-2">
-                        <input type="number" step="0.01" value={item.discount_amount} onChange={(e) => updateCartItem(item.product, "discount_amount", e.target.value)} className="w-20 border rounded px-2 py-1" />
+                      <td className="px-4 py-3">
+                        <input type="number" step="0.01" value={item.discount_amount} onChange={(e) => updateCartItem(item.product, "discount_amount", e.target.value)} className="w-20 border border-violet-200 rounded-xl px-2 py-1 text-sm font-semibold bg-violet-50/40 focus:bg-white" />
                       </td>
-                      <td className="px-3 py-2 text-right">₹{lineTotal.toFixed(2)}</td>
-                      <td className="px-3 py-2 text-right">
-                        <button onClick={() => removeFromCart(item.product)} className="text-red-500 text-xs">Remove</button>
+                      <td className="px-4 py-3 text-right font-black text-violet-950">₹{lineTotal.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right">
+                        <button onClick={() => removeFromCart(item.product)} className="text-rose-600 hover:text-rose-800 font-bold text-xs">Remove</button>
                       </td>
                     </tr>
                   );
                 })}
                 {cart.length === 0 && (
-                  <tr><td colSpan={6} className="px-3 py-6 text-center text-gray-400">Cart is empty. Search and add products above.</td></tr>
+                  <tr><td colSpan={6} className="px-4 py-12 text-center text-violet-400 font-semibold italic">Cart is empty. Search products above to add items.</td></tr>
                 )}
               </tbody>
             </table>
           </div>
         </div>
 
+        {/* Checkout Side Panel */}
         <div className="space-y-4">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-3">
-            <label className="block text-sm font-medium text-gray-700">Customer</label>
-            <select value={customer} onChange={(e) => setCustomer(e.target.value)} className="w-full border rounded px-3 py-2 text-sm">
+          <div className="bg-white rounded-3xl border border-violet-200/80 shadow-xl shadow-violet-100/60 p-5 space-y-3">
+            <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider">Select Customer</label>
+            <select value={customer} onChange={(e) => setCustomer(e.target.value)} className="w-full text-sm font-extrabold border border-violet-200 rounded-xl px-3.5 py-2.5 bg-white text-violet-950 focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500">
               <option value="">Walk-in Customer</option>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ""}</option>
@@ -224,47 +254,47 @@ export default function BillingPage() {
             </select>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-2">
-            <div className="flex justify-between text-sm text-gray-600"><span>Subtotal</span><span>₹{totals.subtotal.toFixed(2)}</span></div>
-            <div className="flex justify-between text-sm text-gray-600"><span>Tax (GST)</span><span>₹{totals.tax.toFixed(2)}</span></div>
-            <div className="flex justify-between text-base font-semibold text-gray-800 border-t pt-2"><span>Total</span><span>₹{totals.total.toFixed(2)}</span></div>
+          <div className="bg-gradient-to-br from-purple-950 via-violet-900 to-indigo-950 text-white rounded-3xl shadow-2xl p-6 space-y-3 border border-violet-800/60">
+            <div className="flex justify-between text-xs text-violet-200 font-semibold"><span>Subtotal</span><span>₹{totals.subtotal.toFixed(2)}</span></div>
+            <div className="flex justify-between text-xs text-violet-200 font-semibold"><span>Tax (GST Breakdown)</span><span>₹{totals.tax.toFixed(2)}</span></div>
+            <div className="flex justify-between text-xl font-black text-white border-t border-violet-800/80 pt-3"><span>Grand Total</span><span>₹{totals.total.toFixed(2)}</span></div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Payment</label>
+          <div className="bg-white rounded-3xl border border-violet-200/80 shadow-xl shadow-violet-100/60 p-5 space-y-3">
+            <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider">Payment Method</label>
             {payments.map((p, index) => (
               <div key={index} className="flex gap-2">
-                <select value={p.mode} onChange={(e) => updatePaymentRow(index, "mode", e.target.value)} className="border rounded px-2 py-1 text-sm flex-1">
+                <select value={p.mode} onChange={(e) => updatePaymentRow(index, "mode", e.target.value)} className="border border-violet-200 rounded-xl px-3 py-2 text-sm font-extrabold bg-white text-violet-950 flex-1">
                   <option value="cash">Cash</option>
-                  <option value="upi">UPI</option>
-                  <option value="card">Card</option>
-                  <option value="credit">Credit/Due</option>
+                  <option value="upi">UPI / Online</option>
+                  <option value="card">Credit/Debit Card</option>
+                  <option value="credit">Credit / Customer Due</option>
                 </select>
                 <input
                   type="number" step="0.01" placeholder="Amount" value={p.amount}
                   onChange={(e) => updatePaymentRow(index, "amount", e.target.value)}
-                  className="border rounded px-2 py-1 text-sm w-24"
+                  className="border border-violet-200 rounded-xl px-3 py-2 text-sm font-semibold bg-violet-50/40 w-28"
                 />
                 {payments.length > 1 && (
-                  <button onClick={() => removePaymentRow(index)} className="text-red-500 text-xs">✕</button>
+                  <button onClick={() => removePaymentRow(index)} className="text-rose-600 font-extrabold text-xs px-1">✕</button>
                 )}
               </div>
             ))}
-            <button type="button" onClick={addPaymentRow} className="text-xs text-blue-600 font-medium">+ Split payment</button>
-            <div className="text-xs text-gray-500 pt-1">
+            <button type="button" onClick={addPaymentRow} className="text-xs text-violet-700 hover:text-purple-800 font-extrabold">+ Add Split Payment</button>
+            <div className="text-xs text-violet-900 font-semibold pt-1">
               Paid: ₹{paidSoFar.toFixed(2)} / ₹{totals.total.toFixed(2)}
-              {paidSoFar < totals.total && <span className="text-orange-600"> (remainder becomes credit/due)</span>}
+              {paidSoFar < totals.total && <span className="text-rose-600 font-bold block mt-0.5"> (Balance becomes due on account)</span>}
             </div>
           </div>
 
-          {error && <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</div>}
+          {error && <div className="text-xs font-bold text-rose-800 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3">{error}</div>}
 
-          <div className="flex gap-2">
-            <button onClick={handleHold} disabled={submitting} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-medium py-2 rounded">
+          <div className="flex gap-3">
+            <button onClick={handleHold} disabled={submitting} className="flex-1 bg-violet-100 hover:bg-violet-200 text-violet-950 text-sm font-extrabold py-3 rounded-2xl transition border border-violet-200">
               Hold Bill
             </button>
-            <button onClick={handleCheckout} disabled={submitting} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-medium py-2 rounded">
-              {submitting ? "Processing..." : "Checkout"}
+            <button onClick={handleCheckout} disabled={submitting} className="flex-1 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 disabled:opacity-60 text-white text-sm font-black py-3 rounded-2xl shadow-lg shadow-violet-600/40 transition">
+              {submitting ? "Processing..." : "Complete Checkout"}
             </button>
           </div>
         </div>

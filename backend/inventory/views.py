@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django.http import FileResponse
 from django.utils import timezone
-from django.db.models import Sum, Count, F
+from django.db.models import Sum, Count, F, Q
 from rest_framework import viewsets, generics, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -21,6 +21,7 @@ from .models import (
     ShopProfile,
     StockMovement,
     Supplier,
+    User,
 )
 from .permissions import IsAdminOrManager
 from .pdf import build_invoice_pdf
@@ -41,7 +42,7 @@ from .serializers import (
 
 
 # ============================================================================
-# AUTH
+# AUTH & USERS
 # ============================================================================
 
 class MeView(generics.RetrieveUpdateAPIView):
@@ -50,6 +51,36 @@ class MeView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.select_related("branch").all().order_by("-date_joined")
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminOrManager]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        search = self.request.query_params.get("search")
+        role = self.request.query_params.get("role")
+        branch = self.request.query_params.get("branch")
+        is_active = self.request.query_params.get("is_active")
+
+        if search:
+            qs = qs.filter(
+                Q(username__icontains=search)
+                | Q(first_name__icontains=search)
+                | Q(last_name__icontains=search)
+                | Q(email__icontains=search)
+                | Q(phone__icontains=search)
+            )
+        if role:
+            qs = qs.filter(role=role)
+        if branch:
+            qs = qs.filter(branch_id=branch)
+        if is_active is not None and is_active != "":
+            qs = qs.filter(is_active=is_active.lower() == "true")
+
+        return qs
 
 
 # ============================================================================

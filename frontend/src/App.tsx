@@ -36,9 +36,30 @@ export default function App() {
             <Route path="purchases" element={<PurchasesPage />} />
             <Route path="suppliers" element={<SuppliersPage />} />
             <Route path="customers" element={<CustomersPage />} />
-            <Route path="users" element={<UserManagement />} />
-            <Route path="user-management" element={<UserManagement />} />
-            <Route path="settings" element={<SettingsPage />} />
+            <Route
+              path="user-management"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "manager"]}>
+                  <UserManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="users"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "manager"]}>
+                  <UserManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="settings"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <SettingsPage />
+                </ProtectedRoute>
+              }
+            />
           </Route>
         </Routes>
       </AuthProvider>

@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
-import Pagination from "../../components/Pagination";
 import type { Product, Purchase, Supplier } from "../../types";
 import { createPurchase, fetchPurchaseProducts, fetchPurchaseSuppliers, fetchPurchases } from "./api";
+import { useAuth } from "../../context/AuthContext";
 
 interface PurchaseItemForm {
   product: string;
@@ -13,6 +13,9 @@ interface PurchaseItemForm {
 const emptyItem: PurchaseItemForm = { product: "", quantity: "1", purchase_price: "", gst_rate: "" };
 
 export default function PurchasesPage() {
+  const { user } = useAuth();
+  const isStaff = user?.role === "staff";
+
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -21,34 +24,16 @@ export default function PurchasesPage() {
   const [items, setItems] = useState<PurchaseItemForm[]>([{ ...emptyItem }]);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState("");
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [count, setCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [hasNext, setHasNext] = useState(false);
-  const [hasPrevious, setHasPrevious] = useState(false);
 
-  const loadPurchases = (q = "", p = 1) => {
-    fetchPurchases(q, p).then((res) => {
-      setPurchases(res.results);
-      setPage(res.current_page);
-      setCount(res.count);
-      setTotalPages(res.total_pages);
-      setHasNext(res.next !== null);
-      setHasPrevious(res.previous !== null);
-    });
+  const loadPurchases = () => {
+    fetchPurchases().then((res: any) => setPurchases(Array.isArray(res) ? res : res.results || []));
   };
 
   useEffect(() => {
     loadPurchases();
-    fetchPurchaseProducts().then(setProducts);
-    fetchPurchaseSuppliers().then(setSuppliers);
+    fetchPurchaseProducts().then((res: any) => setProducts(Array.isArray(res) ? res : res.results || []));
+    fetchPurchaseSuppliers().then((res: any) => setSuppliers(Array.isArray(res) ? res : res.results || []));
   }, []);
-
-  const handleSearch = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    loadPurchases(search, 1);
-  };
 
   const updateItem = (index: number, field: keyof PurchaseItemForm, value: string) => {
     const next = [...items];
@@ -89,7 +74,7 @@ export default function PurchasesPage() {
           })),
       });
       resetForm();
-      loadPurchases(search, page);
+      loadPurchases();
     } catch (err: any) {
       setError(JSON.stringify(err.response?.data || "Failed to save purchase."));
     }
@@ -127,37 +112,19 @@ export default function PurchasesPage() {
             </p>
           </div>
 
-          <button
-            onClick={() => setShowForm(true)}
-            className="group flex items-center gap-2.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold px-5 py-3.5 rounded-2xl shadow-xl shadow-violet-600/40 transition-all duration-200 transform hover:-translate-y-0.5 shrink-0"
-          >
-            <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
-            </svg>
-            <span>New Purchase Order</span>
-          </button>
+          {!isStaff && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="group flex items-center gap-2.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold px-5 py-3.5 rounded-2xl shadow-xl shadow-violet-600/40 transition-all duration-200 transform hover:-translate-y-0.5 shrink-0"
+            >
+              <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>New Purchase Order</span>
+            </button>
+          )}
         </div>
       </div>
-
-      {/* Search Bar */}
-      <form onSubmit={handleSearch} className="bg-gradient-to-r from-white via-violet-50/40 to-white p-5 rounded-2xl border border-violet-200/80 shadow-md shadow-violet-100/40 flex items-center gap-3">
-        <div className="relative flex-1">
-          <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-violet-400">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </span>
-          <input
-            placeholder="Search purchases by supplier or invoice number..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 text-sm bg-violet-50/50 border border-violet-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition-all font-semibold text-violet-950 placeholder-violet-400"
-          />
-        </div>
-        <button type="submit" className="px-5 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold rounded-xl text-xs shadow-md transition shrink-0">
-          Search
-        </button>
-      </form>
 
       {/* Table */}
       <div className="bg-white rounded-3xl border border-violet-200/80 shadow-2xl shadow-violet-100/60 overflow-hidden">
@@ -194,18 +161,10 @@ export default function PurchasesPage() {
             </tbody>
           </table>
         </div>
-        <Pagination
-          currentPage={page}
-          totalPages={totalPages}
-          count={count}
-          hasNext={hasNext}
-          hasPrevious={hasPrevious}
-          onPageChange={(p) => loadPurchases(search, p)}
-        />
       </div>
 
       {/* CREATE PURCHASE MODAL POPUP */}
-      {showForm && (
+      {!isStaff && showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-purple-950/75 backdrop-blur-sm overflow-y-auto">
           <div className="bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-violet-200 overflow-hidden transform transition-all my-8 animate-fade-in">
             <div className="bg-gradient-to-r from-purple-950 via-violet-900 to-indigo-950 text-white px-7 py-5 flex items-center justify-between">

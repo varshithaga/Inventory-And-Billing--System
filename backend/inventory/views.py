@@ -27,7 +27,7 @@ from .models import (
     Supplier,
     User,
 )
-from .permissions import IsAdminOrManager
+from .permissions import IsAdmin, IsAdminOrManager, IsAdminOrManagerOrReadOnly
 from .pdf import build_invoice_pdf
 from .serializers import (
     BranchSerializer,
@@ -58,14 +58,6 @@ class MeView(generics.RetrieveUpdateAPIView):
 
 
 class GoogleLoginView(APIView):
-    """Exchange a Google Identity Services ID token for this app's own JWT
-    pair. The frontend never talks to Google's token endpoint directly — it
-    just gets an ID token from the "Sign in with Google" widget and posts it
-    here. We verify the token's signature/audience with Google, find-or-create
-    the matching User, and hand back the same {access, refresh} shape as
-    /auth/login/, so the rest of the app (refresh, auth headers) is unchanged.
-    """
-
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -110,7 +102,7 @@ class GoogleLoginView(APIView):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.select_related("branch").all().order_by("-date_joined")
     serializer_class = UserSerializer
-    permission_classes = [IsAdminOrManager]
+    permission_classes = [IsAdmin]
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -144,13 +136,13 @@ class UserViewSet(viewsets.ModelViewSet):
 class BranchViewSet(viewsets.ModelViewSet):
     queryset = Branch.objects.all()
     serializer_class = BranchSerializer
-    permission_classes = [IsAdminOrManager]
+    permission_classes = [IsAdmin]
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [IsAdminOrManager]
+    permission_classes = [IsAdminOrManagerOrReadOnly]
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -163,7 +155,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.select_related("category").all()
     serializer_class = ProductSerializer
-    permission_classes = [IsAdminOrManager]
+    permission_classes = [IsAdminOrManagerOrReadOnly]
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -197,7 +189,7 @@ class StockMovementViewSet(viewsets.ReadOnlyModelViewSet):
 class SupplierViewSet(viewsets.ModelViewSet):
     queryset = Supplier.objects.all().order_by("name")
     serializer_class = SupplierSerializer
-    permission_classes = [IsAdminOrManager]
+    permission_classes = [IsAdminOrManagerOrReadOnly]
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -216,7 +208,7 @@ class SupplierViewSet(viewsets.ModelViewSet):
 class PurchaseViewSet(viewsets.ModelViewSet):
     queryset = Purchase.objects.select_related("supplier").prefetch_related("items").order_by("-purchase_date")
     serializer_class = PurchaseSerializer
-    permission_classes = [IsAdminOrManager]
+    permission_classes = [IsAdminOrManagerOrReadOnly]
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -286,7 +278,7 @@ class SaleReturnViewSet(viewsets.ModelViewSet):
 
 class ShopProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = ShopProfileSerializer
-    permission_classes = [IsAdminOrManager]
+    permission_classes = [IsAdmin]
 
     def get_object(self):
         profile, _ = ShopProfile.objects.get_or_create(pk=1, defaults={"name": "My Shop"})

@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
-import Pagination from "../../components/Pagination";
 import type { Supplier } from "../../types";
 import { createSupplier, fetchSuppliers } from "./api";
+import { useAuth } from "../../context/AuthContext";
 
 interface SupplierForm {
   name: string;
@@ -15,36 +15,19 @@ interface SupplierForm {
 const emptyForm: SupplierForm = { name: "", contact_person: "", phone: "", email: "", address: "", gstin: "" };
 
 export default function SuppliersPage() {
+  const { user } = useAuth();
+  const isStaff = user?.role === "staff";
+
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [form, setForm] = useState<SupplierForm>(emptyForm);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState("");
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [count, setCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [hasNext, setHasNext] = useState(false);
-  const [hasPrevious, setHasPrevious] = useState(false);
 
-  const loadSuppliers = (q = "", p = 1) => {
-    fetchSuppliers(q, p).then((res) => {
-      setSuppliers(res.results);
-      setPage(res.current_page);
-      setCount(res.count);
-      setTotalPages(res.total_pages);
-      setHasNext(res.next !== null);
-      setHasPrevious(res.previous !== null);
-    });
+  const loadSuppliers = () => {
+    fetchSuppliers().then((res: any) => setSuppliers(Array.isArray(res) ? res : res.results || []));
   };
 
-  useEffect(() => {
-    loadSuppliers();
-  }, []);
-
-  const handleSearch = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    loadSuppliers(search, 1);
-  };
+  useEffect(loadSuppliers, []);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -53,7 +36,7 @@ export default function SuppliersPage() {
       await createSupplier(form);
       setForm(emptyForm);
       setShowForm(false);
-      loadSuppliers(search, page);
+      loadSuppliers();
     } catch {
       setError("Failed to save supplier.");
     }
@@ -84,37 +67,19 @@ export default function SuppliersPage() {
             </p>
           </div>
 
-          <button
-            onClick={() => setShowForm(true)}
-            className="group flex items-center gap-2.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold px-5 py-3.5 rounded-2xl shadow-xl shadow-violet-600/40 transition-all duration-200 transform hover:-translate-y-0.5 shrink-0"
-          >
-            <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
-            <span>Add New Supplier</span>
-          </button>
+          {!isStaff && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="group flex items-center gap-2.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold px-5 py-3.5 rounded-2xl shadow-xl shadow-violet-600/40 transition-all duration-200 transform hover:-translate-y-0.5 shrink-0"
+            >
+              <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+              <span>Add New Supplier</span>
+            </button>
+          )}
         </div>
       </div>
-
-      {/* Search Bar */}
-      <form onSubmit={handleSearch} className="bg-gradient-to-r from-white via-violet-50/40 to-white p-5 rounded-2xl border border-violet-200/80 shadow-md shadow-violet-100/40 flex items-center gap-3">
-        <div className="relative flex-1">
-          <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-violet-400">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </span>
-          <input
-            placeholder="Search suppliers by name, contact, phone, or GSTIN..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 text-sm bg-violet-50/50 border border-violet-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition-all font-semibold text-violet-950 placeholder-violet-400"
-          />
-        </div>
-        <button type="submit" className="px-5 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold rounded-xl text-xs shadow-md transition shrink-0">
-          Search
-        </button>
-      </form>
 
       {/* Table */}
       <div className="bg-white rounded-3xl border border-violet-200/80 shadow-2xl shadow-violet-100/60 overflow-hidden">
@@ -145,18 +110,10 @@ export default function SuppliersPage() {
             </tbody>
           </table>
         </div>
-        <Pagination
-          currentPage={page}
-          totalPages={totalPages}
-          count={count}
-          hasNext={hasNext}
-          hasPrevious={hasPrevious}
-          onPageChange={(p) => loadSuppliers(search, p)}
-        />
       </div>
 
       {/* CREATE SUPPLIER MODAL POPUP */}
-      {showForm && (
+      {!isStaff && showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-purple-950/75 backdrop-blur-sm overflow-y-auto">
           <div className="bg-white rounded-3xl max-w-xl w-full shadow-2xl border border-violet-200 overflow-hidden transform transition-all my-8 animate-fade-in">
             <div className="bg-gradient-to-r from-purple-950 via-violet-900 to-indigo-950 text-white px-7 py-5 flex items-center justify-between">

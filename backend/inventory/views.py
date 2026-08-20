@@ -152,6 +152,13 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     permission_classes = [IsAdminOrManager]
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        search = self.request.query_params.get("search")
+        if search:
+            qs = qs.filter(name__icontains=search)
+        return qs.order_by("name")
+
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.select_related("category").all()
@@ -163,6 +170,9 @@ class ProductViewSet(viewsets.ModelViewSet):
         search = self.request.query_params.get("search")
         if search:
             qs = qs.filter(name__icontains=search) | qs.filter(sku__icontains=search) | qs.filter(barcode__icontains=search)
+        category = self.request.query_params.get("category")
+        if category:
+            qs = qs.filter(category_id=category)
         if self.request.query_params.get("low_stock") == "true":
             qs = qs.filter(stock_quantity__lte=F("low_stock_threshold"))
         return qs.order_by("name")
@@ -189,11 +199,33 @@ class SupplierViewSet(viewsets.ModelViewSet):
     serializer_class = SupplierSerializer
     permission_classes = [IsAdminOrManager]
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        search = self.request.query_params.get("search")
+        if search:
+            qs = qs.filter(
+                Q(name__icontains=search)
+                | Q(contact_person__icontains=search)
+                | Q(phone__icontains=search)
+                | Q(email__icontains=search)
+                | Q(gstin__icontains=search)
+            )
+        return qs
+
 
 class PurchaseViewSet(viewsets.ModelViewSet):
     queryset = Purchase.objects.select_related("supplier").prefetch_related("items").order_by("-purchase_date")
     serializer_class = PurchaseSerializer
     permission_classes = [IsAdminOrManager]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        search = self.request.query_params.get("search")
+        if search:
+            qs = qs.filter(
+                Q(supplier__name__icontains=search) | Q(invoice_number__icontains=search)
+            )
+        return qs
 
 
 # ============================================================================
@@ -227,6 +259,11 @@ class SaleViewSet(viewsets.ModelViewSet):
         status_param = self.request.query_params.get("status")
         if status_param:
             qs = qs.filter(status=status_param)
+        search = self.request.query_params.get("search")
+        if search:
+            qs = qs.filter(
+                Q(invoice_number__icontains=search) | Q(customer__name__icontains=search)
+            )
         return qs
 
     @action(detail=True, methods=["get"], url_path="invoice")

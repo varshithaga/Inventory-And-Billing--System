@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import PaginatedSearchSelect from "../../components/PaginatedSearchSelect";
 import { openInvoicePdf } from "../../utils/downloadInvoice";
 import type { Customer, PaymentMode, Product, Sale, SaleStatus } from "../../types";
-import { createSale, fetchBillingCustomers, fetchBillingProducts } from "./api";
+import { createSale, fetchBillingCustomersPage, fetchBillingProductsPage } from "./api";
 
 interface CartItem {
   product: number;
@@ -19,30 +20,14 @@ interface PaymentRow {
 }
 
 export default function BillingPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [customer, setCustomer] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [paymentMode] = useState<PaymentMode>("cash");
   const [payments, setPayments] = useState<PaymentRow[]>([{ mode: "cash", amount: "" }]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState<Sale | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchBillingProducts().then(setProducts);
-    fetchBillingCustomers().then(setCustomers);
-  }, []);
-
-  const filteredProducts = useMemo(() => {
-    if (!search.trim()) return [];
-    const q = search.toLowerCase();
-    return products
-      .filter((p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || (p.barcode || "").toLowerCase().includes(q))
-      .slice(0, 8);
-  }, [search, products]);
 
   const addToCart = (product: Product) => {
     setCart((prev) => {
@@ -55,7 +40,6 @@ export default function BillingPage() {
         { product: product.id, name: product.name, quantity: 1, unit_price: Number(product.selling_price), discount_amount: 0, gst_rate: Number(product.gst_rate) },
       ];
     });
-    setSearch("");
   };
 
   const updateCartItem = (productId: number, field: keyof CartItem, value: string) => {
@@ -101,7 +85,7 @@ export default function BillingPage() {
     setSubmitting(true);
     try {
       const sale = await createSale({
-        customer: customer || null,
+        customer: selectedCustomer ? String(selectedCustomer.id) : null,
         status,
         payment_mode: payments.length > 1 ? "split" : paymentMode,
         items_input: cart.map((i) => ({
@@ -116,7 +100,7 @@ export default function BillingPage() {
       setSuccess(sale);
       setCart([]);
       setPayments([{ mode: "cash", amount: "" }]);
-      setCustomer("");
+      setSelectedCustomer(null);
     } catch (err: any) {
       setError(JSON.stringify(err.response?.data || "Failed to complete sale."));
     } finally {
@@ -171,34 +155,29 @@ export default function BillingPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
-          <div className="relative">
-            <input
-              placeholder="Search product by name, SKU, or barcode..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full text-sm font-semibold border border-violet-200 rounded-2xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 shadow-md shadow-violet-100/40 text-violet-950 placeholder-violet-400"
-            />
-            {filteredProducts.length > 0 && (
-              <div className="absolute z-20 mt-2 w-full bg-white border border-violet-200 rounded-2xl shadow-2xl max-h-64 overflow-y-auto divide-y divide-violet-100">
-                {filteredProducts.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => addToCart(p)}
-                    className="w-full text-left px-4 py-3 text-sm hover:bg-violet-50/70 flex justify-between items-center transition"
-                  >
-                    <div>
-                      <span className="font-extrabold text-violet-950">{p.name}</span> <span className="text-violet-400 font-mono text-xs">({p.sku})</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-black text-purple-900">₹{Number(p.selling_price).toFixed(2)}</span>
-                      <span className="text-xs text-violet-400 block">Stock: {p.stock_quantity}</span>
-                    </div>
-                  </button>
-                ))}
+          <PaginatedSearchSelect<Product>
+            selected={null}
+            onSelect={(product) => product && addToCart(product)}
+            fetchPage={fetchBillingProductsPage}
+            getId={(p) => p.id}
+            getLabel={(p) => p.name}
+            allowClear={false}
+            clearOnSelect
+            placeholder="Search product by name, SKU, or barcode..."
+            inputClassName="w-full text-sm font-semibold border border-violet-200 rounded-2xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 shadow-md shadow-violet-100/40 text-violet-950 placeholder-violet-400"
+            renderOption={(p) => (
+              <div className="flex justify-between items-center">
+                <div>
+                  <span className="font-extrabold text-violet-950">{p.name}</span>{" "}
+                  <span className="text-violet-400 font-mono text-xs">({p.sku})</span>
+                </div>
+                <div className="text-right">
+                  <span className="font-black text-purple-900">₹{Number(p.selling_price).toFixed(2)}</span>
+                  <span className="text-xs text-violet-400 block">Stock: {p.stock_quantity}</span>
+                </div>
               </div>
             )}
-          </div>
+          />
 
           <div className="bg-white rounded-3xl border border-violet-200/80 shadow-2xl shadow-violet-100/60 overflow-hidden">
             <table className="w-full text-left border-collapse text-sm">
@@ -246,12 +225,15 @@ export default function BillingPage() {
         <div className="space-y-4">
           <div className="bg-white rounded-3xl border border-violet-200/80 shadow-xl shadow-violet-100/60 p-5 space-y-3">
             <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider">Select Customer</label>
-            <select value={customer} onChange={(e) => setCustomer(e.target.value)} className="w-full text-sm font-extrabold border border-violet-200 rounded-xl px-3.5 py-2.5 bg-white text-violet-950 focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500">
-              <option value="">Walk-in Customer</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ""}</option>
-              ))}
-            </select>
+            <PaginatedSearchSelect<Customer>
+              selected={selectedCustomer}
+              onSelect={setSelectedCustomer}
+              fetchPage={fetchBillingCustomersPage}
+              getId={(c) => c.id}
+              getLabel={(c) => (c.phone ? `${c.name} (${c.phone})` : c.name)}
+              placeholder="Walk-in Customer"
+              inputClassName="w-full text-sm font-extrabold border border-violet-200 rounded-xl px-3.5 py-2.5 bg-white text-violet-950 focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500"
+            />
           </div>
 
           <div className="bg-gradient-to-br from-purple-950 via-violet-900 to-indigo-950 text-white rounded-3xl shadow-2xl p-6 space-y-3 border border-violet-800/60">

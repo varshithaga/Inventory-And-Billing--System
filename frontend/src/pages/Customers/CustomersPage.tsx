@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import Pagination from "../../components/Pagination";
 import type { Customer } from "../../types";
 import { createCustomer, fetchCustomers } from "./api";
 
@@ -18,12 +19,32 @@ export default function CustomersPage() {
   const [form, setForm] = useState<CustomerForm>(emptyForm);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [count, setCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrevious, setHasPrevious] = useState(false);
 
-  const loadCustomers = () => {
-    fetchCustomers().then((res: any) => setCustomers(Array.isArray(res) ? res : res.results || []));
+  const loadCustomers = (q = "", p = 1) => {
+    fetchCustomers(q, p).then((res) => {
+      setCustomers(res.results);
+      setPage(res.current_page);
+      setCount(res.count);
+      setTotalPages(res.total_pages);
+      setHasNext(res.next !== null);
+      setHasPrevious(res.previous !== null);
+    });
   };
 
-  useEffect(loadCustomers, []);
+  useEffect(() => {
+    loadCustomers();
+  }, []);
+
+  const handleSearch = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    loadCustomers(search, 1);
+  };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -32,7 +53,7 @@ export default function CustomersPage() {
       await createCustomer(form);
       setForm(emptyForm);
       setShowForm(false);
-      loadCustomers();
+      loadCustomers(search, page);
     } catch {
       setError("Failed to save customer.");
     }
@@ -75,6 +96,26 @@ export default function CustomersPage() {
         </div>
       </div>
 
+      {/* Search Bar */}
+      <form onSubmit={handleSearch} className="bg-gradient-to-r from-white via-violet-50/40 to-white p-5 rounded-2xl border border-violet-200/80 shadow-md shadow-violet-100/40 flex items-center gap-3">
+        <div className="relative flex-1">
+          <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-violet-400">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </span>
+          <input
+            placeholder="Search customers by name or phone..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-11 pr-4 py-3 text-sm bg-violet-50/50 border border-violet-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition-all font-semibold text-violet-950 placeholder-violet-400"
+          />
+        </div>
+        <button type="submit" className="px-5 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold rounded-xl text-xs shadow-md transition shrink-0">
+          Search
+        </button>
+      </form>
+
       {/* Table */}
       <div className="bg-white rounded-3xl border border-violet-200/80 shadow-2xl shadow-violet-100/60 overflow-hidden">
         <div className="overflow-x-auto">
@@ -108,6 +149,14 @@ export default function CustomersPage() {
             </tbody>
           </table>
         </div>
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          count={count}
+          hasNext={hasNext}
+          hasPrevious={hasPrevious}
+          onPageChange={(p) => loadCustomers(search, p)}
+        />
       </div>
 
       {/* CREATE CUSTOMER MODAL POPUP */}

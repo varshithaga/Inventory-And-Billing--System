@@ -1,27 +1,21 @@
 import api from "../../api/client";
 import type { Customer, PaginatedResponse, PaymentMode, Product, Sale, SaleStatus } from "../../types";
 
-// The POS product/customer pickers filter client-side as the cashier types,
-// so they need every row in one shot, not just page 1 — pull up to the
-// backend's max_page_size instead of paginating them.
-const LOOKUP_LIMIT = 500;
-
-function unwrap<T>(data: PaginatedResponse<T> | T[]): T[] {
-  return Array.isArray(data) ? data : data.results;
+// Backend-connected, paginated lookups for the POS product search and
+// customer picker — load more results as the user scrolls instead of
+// fetching everything up front.
+export async function fetchBillingProductsPage(search = "", page = 1): Promise<PaginatedResponse<Product>> {
+  const res = await api.get<PaginatedResponse<Product>>("/products/", {
+    params: { ...(search ? { search } : {}), page },
+  });
+  return res.data;
 }
 
-export async function fetchBillingProducts(): Promise<Product[]> {
-  const res = await api.get<PaginatedResponse<Product> | Product[]>("/products/", {
-    params: { limit: LOOKUP_LIMIT },
+export async function fetchBillingCustomersPage(search = "", page = 1): Promise<PaginatedResponse<Customer>> {
+  const res = await api.get<PaginatedResponse<Customer>>("/customers/", {
+    params: { ...(search ? { search } : {}), page },
   });
-  return unwrap(res.data);
-}
-
-export async function fetchBillingCustomers(): Promise<Customer[]> {
-  const res = await api.get<PaginatedResponse<Customer> | Customer[]>("/customers/", {
-    params: { limit: LOOKUP_LIMIT },
-  });
-  return unwrap(res.data);
+  return res.data;
 }
 
 export interface SaleItemInput {

@@ -1,8 +1,10 @@
 import api from "../../api/client";
 import type { Customer, PaginatedResponse } from "../../types";
 
-export async function fetchCustomers(page = 1): Promise<PaginatedResponse<Customer>> {
-  const res = await api.get<PaginatedResponse<Customer>>("/customers/", { params: { page } });
+export async function fetchCustomers(search = "", page = 1): Promise<PaginatedResponse<Customer>> {
+  const res = await api.get<PaginatedResponse<Customer>>("/customers/", {
+    params: { ...(search ? { search } : {}), page },
+  });
   return res.data;
 }
 

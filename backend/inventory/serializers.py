@@ -1,8 +1,10 @@
+import uuid
 from decimal import Decimal
 
 from django.db import transaction
 from django.db.models import F
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 
 from .models import (
     Branch,
@@ -89,6 +91,15 @@ class CategorySerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source="category.name", read_only=True)
     is_low_stock = serializers.BooleanField(read_only=True)
+    # SKU is optional on input — if left blank we generate a unique one, so
+    # the unique=True constraint on the model field is never violated. The
+    # explicit UniqueValidator keeps the clean 400 response for a real
+    # duplicate SKU (declaring the field manually otherwise drops DRF's
+    # auto-generated one).
+    sku = serializers.CharField(
+        required=False, allow_blank=True, max_length=50,
+        validators=[UniqueValidator(queryset=Product.objects.all())],
+    )
 
     class Meta:
         model = Product
@@ -99,6 +110,20 @@ class ProductSerializer(serializers.ModelSerializer):
             "image", "is_active", "created_at", "updated_at",
         ]
         read_only_fields = ["id", "stock_quantity", "created_at", "updated_at"]
+
+    @staticmethod
+    def _generate_sku():
+        return f"SKU-{uuid.uuid4().hex[:8].upper()}"
+
+    def create(self, validated_data):
+        if not validated_data.get("sku"):
+            validated_data["sku"] = self._generate_sku()
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        if "sku" in validated_data and not validated_data["sku"]:
+            validated_data.pop("sku")
+        return super().update(instance, validated_data)
 
 
 class BranchStockSerializer(serializers.ModelSerializer):

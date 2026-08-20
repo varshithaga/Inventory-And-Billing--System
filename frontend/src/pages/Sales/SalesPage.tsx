@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import Pagination from "../../components/Pagination";
 import { openInvoicePdf } from "../../utils/downloadInvoice";
@@ -8,6 +8,7 @@ import { fetchSales } from "./api";
 export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [statusFilter, setStatusFilter] = useState<SaleStatus | "">("");
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [count, setCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -15,8 +16,8 @@ export default function SalesPage() {
   const [hasPrevious, setHasPrevious] = useState(false);
   const navigate = useNavigate();
 
-  const loadSales = (status: SaleStatus | "" = "", p = 1) => {
-    fetchSales(status, p).then((res) => {
+  const loadSales = (status: SaleStatus | "" = "", q = "", p = 1) => {
+    fetchSales(status, q, p).then((res) => {
       setSales(res.results);
       setPage(res.current_page);
       setCount(res.count);
@@ -27,8 +28,14 @@ export default function SalesPage() {
   };
 
   useEffect(() => {
-    loadSales(statusFilter, 1);
+    loadSales(statusFilter, search, 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
+
+  const handleSearch = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    loadSales(statusFilter, search, 1);
+  };
 
   return (
     <div className="space-y-6 pb-16 font-sans">
@@ -79,6 +86,26 @@ export default function SalesPage() {
           </div>
         </div>
       </div>
+
+      {/* Search Bar */}
+      <form onSubmit={handleSearch} className="bg-gradient-to-r from-white via-violet-50/40 to-white p-5 rounded-2xl border border-violet-200/80 shadow-md shadow-violet-100/40 flex items-center gap-3">
+        <div className="relative flex-1">
+          <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-violet-400">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </span>
+          <input
+            placeholder="Search sales by invoice number or customer name..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-11 pr-4 py-3 text-sm bg-violet-50/50 border border-violet-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition-all font-semibold text-violet-950 placeholder-violet-400"
+          />
+        </div>
+        <button type="submit" className="px-5 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold rounded-xl text-xs shadow-md transition shrink-0">
+          Search
+        </button>
+      </form>
 
       {/* Sales Table */}
       <div className="bg-white rounded-3xl border border-violet-200/80 shadow-2xl shadow-violet-100/60 overflow-hidden">
@@ -145,7 +172,7 @@ export default function SalesPage() {
           count={count}
           hasNext={hasNext}
           hasPrevious={hasPrevious}
-          onPageChange={(p) => loadSales(statusFilter, p)}
+          onPageChange={(p) => loadSales(statusFilter, search, p)}
         />
       </div>
     </div>

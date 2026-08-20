@@ -9,8 +9,10 @@ function unwrap<T>(data: PaginatedResponse<T> | T[]): T[] {
   return Array.isArray(data) ? data : data.results;
 }
 
-export async function fetchPurchases(page = 1): Promise<PaginatedResponse<Purchase>> {
-  const res = await api.get<PaginatedResponse<Purchase>>("/purchases/", { params: { page } });
+export async function fetchPurchases(search = "", page = 1): Promise<PaginatedResponse<Purchase>> {
+  const res = await api.get<PaginatedResponse<Purchase>>("/purchases/", {
+    params: { ...(search ? { search } : {}), page },
+  });
   return res.data;
 }
 

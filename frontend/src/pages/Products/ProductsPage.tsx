@@ -1,6 +1,8 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import Pagination from "../../components/Pagination";
+import PaginatedSearchSelect from "../../components/PaginatedSearchSelect";
 import type { Category, Product } from "../../types";
-import { createCategory, createProduct, fetchCategories, fetchProducts, updateProduct } from "./api";
+import { createCategory, createProduct, fetchCategories, fetchCategoriesPage, fetchProducts, updateProduct } from "./api";
 
 interface ProductForm {
   name: string;
@@ -32,17 +34,28 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<Category | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
+  const [formCategory, setFormCategory] = useState<Category | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [newCategory, setNewCategory] = useState("");
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [page, setPage] = useState(1);
+  const [count, setCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrevious, setHasPrevious] = useState(false);
 
-  const loadProducts = (q = "") => {
-    fetchProducts(q).then((res: any) => {
-      setProducts(Array.isArray(res) ? res : res.results || []);
+  const loadProducts = (q = "", p = 1, categoryId: number | string = "") => {
+    fetchProducts(q, p, categoryId ? String(categoryId) : "").then((res) => {
+      setProducts(res.results);
+      setPage(res.current_page);
+      setCount(res.count);
+      setTotalPages(res.total_pages);
+      setHasNext(res.next !== null);
+      setHasPrevious(res.previous !== null);
     });
   };
 
@@ -57,7 +70,12 @@ export default function ProductsPage() {
 
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    loadProducts(search);
+    loadProducts(search, 1, categoryFilter?.id ?? "");
+  };
+
+  const handleCategoryFilterChange = (category: Category | null) => {
+    setCategoryFilter(category);
+    loadProducts(search, 1, category?.id ?? "");
   };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -66,6 +84,7 @@ export default function ProductsPage() {
 
   const resetForm = () => {
     setForm(emptyForm);
+    setFormCategory(null);
     setEditingId(null);
     setShowForm(false);
   };
@@ -88,7 +107,7 @@ export default function ProductsPage() {
         await createProduct(payload);
       }
       resetForm();
-      loadProducts(search);
+      loadProducts(search, page, categoryFilter?.id ?? "");
     } catch (err: any) {
       setError(JSON.stringify(err.response?.data || "Failed to save product."));
     }
@@ -107,8 +126,16 @@ export default function ProductsPage() {
       gst_rate: product.gst_rate,
       low_stock_threshold: product.low_stock_threshold,
     });
+    setFormCategory(
+      product.category ? ({ id: product.category, name: product.category_name || "" } as Category) : null
+    );
     setEditingId(product.id);
     setShowForm(true);
+  };
+
+  const handleFormCategoryChange = (category: Category | null) => {
+    setFormCategory(category);
+    setForm({ ...form, category: category ? String(category.id) : "" });
   };
 
   const handleAddCategory = async () => {
@@ -116,17 +143,13 @@ export default function ProductsPage() {
     try {
       const category = await createCategory(newCategory.trim());
       setCategories([...categories, category]);
+      setFormCategory(category);
       setForm({ ...form, category: String(category.id) });
       setNewCategory("");
     } catch {
       setError("Failed to create category.");
     }
   };
-
-  const filteredProducts = products.filter((p) => {
-    if (!categoryFilter) return true;
-    return String(p.category) === String(categoryFilter);
-  });
 
   return (
     <div className="space-y-6 pb-16 font-sans">
@@ -198,16 +221,16 @@ export default function ProductsPage() {
           />
         </div>
 
-        <select
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          className="text-sm font-extrabold border border-violet-200 rounded-xl px-4 py-3 bg-violet-50/60 text-violet-950 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 cursor-pointer shrink-0"
-        >
-          <option value="">All Categories ({categories.length})</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
+        <PaginatedSearchSelect<Category>
+          selected={categoryFilter}
+          onSelect={handleCategoryFilterChange}
+          fetchPage={fetchCategoriesPage}
+          getId={(c) => c.id}
+          getLabel={(c) => c.name}
+          placeholder="All Categories"
+          className="w-full md:w-56 shrink-0"
+          inputClassName="w-full text-sm font-extrabold border border-violet-200 rounded-xl px-4 py-3 bg-violet-50/60 text-violet-950 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 focus:bg-white cursor-pointer"
+        />
 
         <button type="submit" className="px-5 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold rounded-xl text-xs shadow-md transition shrink-0">
           Search Catalog
@@ -230,7 +253,7 @@ export default function ProductsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-violet-100/60 text-sm">
-              {filteredProducts.map((p) => (
+              {products.map((p) => (
                 <tr key={p.id} className="hover:bg-violet-50/60 transition-colors duration-150">
                   <td className="px-6 py-4.5 font-extrabold text-violet-950">{p.name}</td>
                   <td className="px-6 py-4.5 font-mono text-xs font-bold text-violet-900/80">{p.sku}</td>
@@ -251,7 +274,7 @@ export default function ProductsPage() {
                   </td>
                 </tr>
               ))}
-              {filteredProducts.length === 0 && (
+              {products.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-violet-400 font-semibold italic">No products found in catalog.</td>
                 </tr>
@@ -259,6 +282,14 @@ export default function ProductsPage() {
             </tbody>
           </table>
         </div>
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          count={count}
+          hasNext={hasNext}
+          hasPrevious={hasPrevious}
+          onPageChange={(p) => loadProducts(search, p, categoryFilter?.id ?? "")}
+        />
       </div>
 
       {/* CREATE / EDIT PRODUCT MODAL POPUP */}
@@ -300,8 +331,8 @@ export default function ProductsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">SKU *</label>
-                  <input name="sku" placeholder="SKU Code" value={form.sku} onChange={handleChange} required className="w-full text-sm border border-violet-200 rounded-xl px-3.5 py-2.5 bg-violet-50/40 focus:bg-white focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 font-semibold" />
+                  <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">SKU (optional)</label>
+                  <input name="sku" placeholder="Auto-generated if left blank" value={form.sku} onChange={handleChange} className="w-full text-sm border border-violet-200 rounded-xl px-3.5 py-2.5 bg-violet-50/40 focus:bg-white focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 font-semibold" />
                 </div>
 
                 <div>
@@ -343,12 +374,15 @@ export default function ProductsPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-violet-100">
                 <div>
                   <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">Category</label>
-                  <select name="category" value={form.category} onChange={handleChange} className="w-full text-sm font-extrabold border border-violet-200 rounded-xl px-3.5 py-2.5 bg-white text-violet-950 focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500">
-                    <option value="">No category</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+                  <PaginatedSearchSelect<Category>
+                    selected={formCategory}
+                    onSelect={handleFormCategoryChange}
+                    fetchPage={fetchCategoriesPage}
+                    getId={(c) => c.id}
+                    getLabel={(c) => c.name}
+                    placeholder="No category"
+                    inputClassName="w-full text-sm font-extrabold border border-violet-200 rounded-xl px-3.5 py-2.5 bg-white text-violet-950 focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500"
+                  />
                 </div>
 
                 <div className="md:col-span-2">

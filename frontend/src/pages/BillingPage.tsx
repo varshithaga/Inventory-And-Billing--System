@@ -2,23 +2,42 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client";
 import { openInvoicePdf } from "../utils/downloadInvoice";
+import type { Customer, PaginatedResponse, PaymentMode, Product, Sale, SaleStatus } from "../types";
+
+interface CartItem {
+  product: number;
+  name: string;
+  quantity: number;
+  unit_price: number;
+  discount_amount: number;
+  gst_rate: number;
+}
+
+interface PaymentRow {
+  mode: PaymentMode;
+  amount: string;
+}
+
+function unwrap<T>(data: PaginatedResponse<T> | T[]): T[] {
+  return Array.isArray(data) ? data : data.results;
+}
 
 export default function BillingPage() {
-  const [products, setProducts] = useState([]);
-  const [customers, setCustomers] = useState([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState("");
-  const [cart, setCart] = useState([]); // {product, name, quantity, unit_price, discount_amount, gst_rate}
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [customer, setCustomer] = useState("");
-  const [paymentMode, setPaymentMode] = useState("cash");
-  const [payments, setPayments] = useState([{ mode: "cash", amount: "" }]);
+  const [paymentMode] = useState<PaymentMode>("cash");
+  const [payments, setPayments] = useState<PaymentRow[]>([{ mode: "cash", amount: "" }]);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(null);
+  const [success, setSuccess] = useState<Sale | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get("/products/").then((res) => setProducts(res.data.results ?? res.data));
-    api.get("/customers/").then((res) => setCustomers(res.data.results ?? res.data));
+    api.get<PaginatedResponse<Product> | Product[]>("/products/").then((res) => setProducts(unwrap(res.data)));
+    api.get<PaginatedResponse<Customer> | Customer[]>("/customers/").then((res) => setCustomers(unwrap(res.data)));
   }, []);
 
   const filteredProducts = useMemo(() => {
@@ -29,7 +48,7 @@ export default function BillingPage() {
       .slice(0, 8);
   }, [search, products]);
 
-  const addToCart = (product) => {
+  const addToCart = (product: Product) => {
     setCart((prev) => {
       const existing = prev.find((i) => i.product === product.id);
       if (existing) {
@@ -43,11 +62,11 @@ export default function BillingPage() {
     setSearch("");
   };
 
-  const updateCartItem = (productId, field, value) => {
-    setCart((prev) => prev.map((i) => (i.product === productId ? { ...i, [field]: value } : i)));
+  const updateCartItem = (productId: number, field: keyof CartItem, value: string) => {
+    setCart((prev) => prev.map((i) => (i.product === productId ? { ...i, [field]: Number(value) } : i)));
   };
 
-  const removeFromCart = (productId) => setCart((prev) => prev.filter((i) => i.product !== productId));
+  const removeFromCart = (productId: number) => setCart((prev) => prev.filter((i) => i.product !== productId));
 
   const totals = useMemo(() => {
     let subtotal = 0;
@@ -64,10 +83,10 @@ export default function BillingPage() {
   }, [cart]);
 
   const addPaymentRow = () => setPayments([...payments, { mode: "cash", amount: "" }]);
-  const removePaymentRow = (index) => setPayments(payments.filter((_, i) => i !== index));
-  const updatePaymentRow = (index, field, value) => {
+  const removePaymentRow = (index: number) => setPayments(payments.filter((_, i) => i !== index));
+  const updatePaymentRow = (index: number, field: keyof PaymentRow, value: string) => {
     const next = [...payments];
-    next[index] = { ...next[index], [field]: value };
+    next[index] = { ...next[index], [field]: value } as PaymentRow;
     setPayments(next);
   };
 
@@ -76,7 +95,7 @@ export default function BillingPage() {
   const handleHold = () => submitSale("draft");
   const handleCheckout = () => submitSale("completed");
 
-  const submitSale = async (status) => {
+  const submitSale = async (status: SaleStatus) => {
     setError("");
     setSuccess(null);
     if (cart.length === 0) {
@@ -85,7 +104,7 @@ export default function BillingPage() {
     }
     setSubmitting(true);
     try {
-      const res = await api.post("/sales/", {
+      const res = await api.post<Sale>("/sales/", {
         customer: customer || null,
         status,
         payment_mode: payments.length > 1 ? "split" : paymentMode,
@@ -102,7 +121,7 @@ export default function BillingPage() {
       setCart([]);
       setPayments([{ mode: "cash", amount: "" }]);
       setCustomer("");
-    } catch (err) {
+    } catch (err: any) {
       setError(JSON.stringify(err.response?.data || "Failed to complete sale."));
     } finally {
       setSubmitting(false);

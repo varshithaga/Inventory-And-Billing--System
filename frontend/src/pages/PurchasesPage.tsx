@@ -1,29 +1,41 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import api from "../api/client";
+import type { PaginatedResponse, Product, Purchase, Supplier } from "../types";
 
-const emptyItem = { product: "", quantity: "1", purchase_price: "", gst_rate: "" };
+interface PurchaseItemForm {
+  product: string;
+  quantity: string;
+  purchase_price: string;
+  gst_rate: string;
+}
+
+const emptyItem: PurchaseItemForm = { product: "", quantity: "1", purchase_price: "", gst_rate: "" };
+
+function unwrap<T>(data: PaginatedResponse<T> | T[]): T[] {
+  return Array.isArray(data) ? data : data.results;
+}
 
 export default function PurchasesPage() {
-  const [purchases, setPurchases] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [suppliers, setSuppliers] = useState([]);
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [supplier, setSupplier] = useState("");
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().slice(0, 10));
-  const [items, setItems] = useState([{ ...emptyItem }]);
+  const [items, setItems] = useState<PurchaseItemForm[]>([{ ...emptyItem }]);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState("");
 
   const loadPurchases = () => {
-    api.get("/purchases/").then((res) => setPurchases(res.data.results ?? res.data));
+    api.get<PaginatedResponse<Purchase> | Purchase[]>("/purchases/").then((res) => setPurchases(unwrap(res.data)));
   };
 
   useEffect(() => {
     loadPurchases();
-    api.get("/products/").then((res) => setProducts(res.data.results ?? res.data));
-    api.get("/suppliers/").then((res) => setSuppliers(res.data.results ?? res.data));
+    api.get<PaginatedResponse<Product> | Product[]>("/products/").then((res) => setProducts(unwrap(res.data)));
+    api.get<PaginatedResponse<Supplier> | Supplier[]>("/suppliers/").then((res) => setSuppliers(unwrap(res.data)));
   }, []);
 
-  const updateItem = (index, field, value) => {
+  const updateItem = (index: number, field: keyof PurchaseItemForm, value: string) => {
     const next = [...items];
     next[index] = { ...next[index], [field]: value };
     if (field === "product") {
@@ -37,7 +49,7 @@ export default function PurchasesPage() {
   };
 
   const addRow = () => setItems([...items, { ...emptyItem }]);
-  const removeRow = (index) => setItems(items.filter((_, i) => i !== index));
+  const removeRow = (index: number) => setItems(items.filter((_, i) => i !== index));
 
   const resetForm = () => {
     setSupplier("");
@@ -45,7 +57,7 @@ export default function PurchasesPage() {
     setShowForm(false);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     try {
@@ -63,7 +75,7 @@ export default function PurchasesPage() {
       });
       resetForm();
       loadPurchases();
-    } catch (err) {
+    } catch (err: any) {
       setError(JSON.stringify(err.response?.data || "Failed to save purchase."));
     }
   };

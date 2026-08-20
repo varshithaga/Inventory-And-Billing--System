@@ -1,6 +1,9 @@
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models import Sum
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 
 
 # ============================================================================
@@ -87,7 +90,7 @@ class Product(models.Model):
     category = models.ForeignKey(
         Category, on_delete=models.SET_NULL, null=True, blank=True, related_name="products"
     )
-    unit = models.CharField(max_length=20, default="pcs")
+    unit = models.CharField(max_length=20, default="pcs")  # pcs, kg, g, litre, ml, packet, box
     hsn_code = models.CharField(max_length=20, blank=True)
 
     purchase_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -96,6 +99,8 @@ class Product(models.Model):
 
     # Cached total across all branches. BranchStock is the source of truth;
     # this column exists so list/search views don't need to join+sum it.
+    # Kept in sync automatically via signals below whenever BranchStock changes
+    # — never edit this field directly, always go through BranchStock/StockMovement.
     stock_quantity = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     low_stock_threshold = models.DecimalField(max_digits=12, decimal_places=2, default=5)
 
@@ -111,6 +116,16 @@ class Product(models.Model):
     @property
     def is_low_stock(self):
         return self.stock_quantity <= self.low_stock_threshold
+
+    def recalculate_stock_quantity(self, save=True):
+        """Recompute stock_quantity as the sum of all BranchStock rows for this
+        product. Called automatically by the BranchStock signal below, but can
+        also be called manually (e.g. from a management command / data fix)."""
+        total = self.branch_stocks.aggregate(total=Sum("quantity"))["total"] or 0
+        self.stock_quantity = total
+        if save:
+            self.save(update_fields=["stock_quantity"])
+        return total
 
 
 class BranchStock(models.Model):
@@ -137,9 +152,25 @@ class BranchStock(models.Model):
         return self.quantity <= self.product.low_stock_threshold
 
 
+@receiver(post_save, sender=BranchStock)
+@receiver(post_delete, sender=BranchStock)
+def sync_product_stock_quantity(sender, instance, **kwargs):
+    """Whenever a BranchStock row is created, updated, or deleted, recompute
+    the cached total on the related Product so it never drifts out of sync."""
+    instance.product.recalculate_stock_quantity()
+
+
 class StockMovement(models.Model):
     """Full audit trail of stock in/out/adjustment, tied to the branch and the
-    transaction (purchase/sale/return/etc.) that caused it."""
+    transaction (purchase/sale/return/etc.) that caused it.
+
+    NOTE: Creating a StockMovement does NOT automatically update BranchStock.
+    Stock changes should go through a service function (e.g. sales/services.py
+    or inventory/services.py) that updates BranchStock.quantity and creates the
+    matching StockMovement row together, inside one atomic transaction. This
+    keeps StockMovement a pure audit log rather than a trigger source, which
+    makes bulk/backfill operations safer.
+    """
 
     class MovementType(models.TextChoices):
         IN = "in", "Stock In"
@@ -176,6 +207,37 @@ class StockMovement(models.Model):
 
     def __str__(self):
         return f"{self.product} {self.movement_type} {self.quantity}"
+
+
+class StockTransfer(models.Model):
+    """Explicit stock transfer between two branches. Modeled as its own record
+    (rather than two implicit StockMovement rows) so a transfer is a single,
+    traceable action — useful once you have more than one branch."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        COMPLETED = "completed", "Completed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="transfers")
+    from_branch = models.ForeignKey(
+        Branch, on_delete=models.SET_NULL, null=True, related_name="transfers_out"
+    )
+    to_branch = models.ForeignKey(
+        Branch, on_delete=models.SET_NULL, null=True, related_name="transfers_in"
+    )
+    quantity = models.DecimalField(max_digits=12, decimal_places=2)
+    status = models.CharField(max_length=15, choices=Status.choices, default=Status.PENDING)
+    notes = models.CharField(max_length=255, blank=True)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="stock_transfers"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.product} {self.quantity} : {self.from_branch} -> {self.to_branch}"
 
 
 # ============================================================================
@@ -482,5 +544,6 @@ class Notification(models.Model):
 # 12. MULTI-BRANCH SUPPORT
 # Branch model lives at the top of section 1 since User references it.
 # Per-branch stock levels are handled by BranchStock in section 2, since it
-# depends on Product.
+# depends on Product. StockTransfer (also section 2) handles moving stock
+# between branches as an explicit, traceable action.
 # ============================================================================

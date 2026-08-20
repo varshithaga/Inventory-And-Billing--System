@@ -1,7 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import api from "../api/client";
+import type { Category, PaginatedResponse, Product } from "../types";
 
-const emptyForm = {
+interface ProductForm {
+  name: string;
+  sku: string;
+  barcode: string;
+  category: string;
+  unit: string;
+  hsn_code: string;
+  purchase_price: string;
+  selling_price: string;
+  gst_rate: string;
+  low_stock_threshold: string;
+}
+
+const emptyForm: ProductForm = {
   name: "",
   sku: "",
   barcode: "",
@@ -14,22 +28,30 @@ const emptyForm = {
   low_stock_threshold: "5",
 };
 
+function unwrap<T>(data: PaginatedResponse<T> | T[]): T[] {
+  return Array.isArray(data) ? data : data.results;
+}
+
 export default function ProductsPage() {
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState("");
-  const [form, setForm] = useState(emptyForm);
-  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState<ProductForm>(emptyForm);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [newCategory, setNewCategory] = useState("");
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
 
   const loadProducts = (q = "") => {
-    api.get("/products/", { params: q ? { search: q } : {} }).then((res) => setProducts(res.data.results ?? res.data));
+    api
+      .get<PaginatedResponse<Product> | Product[]>("/products/", { params: q ? { search: q } : {} })
+      .then((res) => setProducts(unwrap(res.data)));
   };
 
   const loadCategories = () => {
-    api.get("/categories/").then((res) => setCategories(res.data.results ?? res.data));
+    api
+      .get<PaginatedResponse<Category> | Category[]>("/categories/")
+      .then((res) => setCategories(unwrap(res.data)));
   };
 
   useEffect(() => {
@@ -37,12 +59,12 @@ export default function ProductsPage() {
     loadCategories();
   }, []);
 
-  const handleSearch = (e) => {
+  const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     loadProducts(search);
   };
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
@@ -52,7 +74,7 @@ export default function ProductsPage() {
     setShowForm(false);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     const payload = {
@@ -71,17 +93,17 @@ export default function ProductsPage() {
       }
       resetForm();
       loadProducts(search);
-    } catch (err) {
+    } catch (err: any) {
       setError(JSON.stringify(err.response?.data || "Failed to save product."));
     }
   };
 
-  const handleEdit = (product) => {
+  const handleEdit = (product: Product) => {
     setForm({
       name: product.name,
       sku: product.sku,
       barcode: product.barcode || "",
-      category: product.category || "",
+      category: product.category ? String(product.category) : "",
       unit: product.unit,
       hsn_code: product.hsn_code || "",
       purchase_price: product.purchase_price,
@@ -95,9 +117,9 @@ export default function ProductsPage() {
 
   const handleAddCategory = async () => {
     if (!newCategory.trim()) return;
-    const res = await api.post("/categories/", { name: newCategory.trim() });
+    const res = await api.post<Category>("/categories/", { name: newCategory.trim() });
     setCategories([...categories, res.data]);
-    setForm({ ...form, category: res.data.id });
+    setForm({ ...form, category: String(res.data.id) });
     setNewCategory("");
   };
 

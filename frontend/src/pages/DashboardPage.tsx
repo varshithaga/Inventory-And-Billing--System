@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import api from "../api/client";
+import type { DashboardSummary } from "../types";
 
-function StatCard({ label, value, sub }) {
+function StatCard({ label, value, sub }: { label: string; value: ReactNode; sub?: ReactNode }) {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
       <div className="text-sm text-gray-500">{label}</div>
@@ -12,12 +13,12 @@ function StatCard({ label, value, sub }) {
 }
 
 export default function DashboardPage() {
-  const [data, setData] = useState(null);
+  const [data, setData] = useState<DashboardSummary | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     api
-      .get("/dashboard/summary/")
+      .get<DashboardSummary>("/dashboard/summary/")
       .then((res) => setData(res.data))
       .catch(() => setError("Failed to load dashboard."));
   }, []);

@@ -1,6 +1,6 @@
 import api from "../api/client";
 
-export async function openInvoicePdf(saleId, invoiceNumber) {
+export async function openInvoicePdf(saleId: number, invoiceNumber?: string | null): Promise<void> {
   const res = await api.get(`/sales/${saleId}/invoice/`, { responseType: "blob" });
   const url = window.URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
   const link = document.createElement("a");

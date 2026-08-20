@@ -1,20 +1,29 @@
-import axios from "axios";
+import axios, { type InternalAxiosRequestConfig } from "axios";
 
 const ACCESS_KEY = "ib_access";
 const REFRESH_KEY = "ib_refresh";
 
 export const tokenStore = {
-  getAccess: () => localStorage.getItem(ACCESS_KEY),
-  getRefresh: () => localStorage.getItem(REFRESH_KEY),
-  setTokens: (access, refresh) => {
+  getAccess: (): string | null => localStorage.getItem(ACCESS_KEY),
+  getRefresh: (): string | null => localStorage.getItem(REFRESH_KEY),
+  setTokens: (access: string, refresh?: string | null): void => {
     localStorage.setItem(ACCESS_KEY, access);
     if (refresh) localStorage.setItem(REFRESH_KEY, refresh);
   },
-  clear: () => {
+  clear: (): void => {
     localStorage.removeItem(ACCESS_KEY);
     localStorage.removeItem(REFRESH_KEY);
   },
 };
+
+interface RetryableRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
+
+interface RefreshResponse {
+  access: string;
+  refresh?: string;
+}
 
 const api = axios.create({ baseURL: "/api" });
 
@@ -24,15 +33,16 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-let refreshPromise = null;
+let refreshPromise: Promise<string> | null = null;
 
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
-    const isAuthEndpoint = originalRequest?.url?.includes("/auth/login") || originalRequest?.url?.includes("/auth/refresh");
+    const originalRequest = error.config as RetryableRequestConfig | undefined;
+    const isAuthEndpoint =
+      originalRequest?.url?.includes("/auth/login") || originalRequest?.url?.includes("/auth/refresh");
 
-    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isAuthEndpoint) {
       originalRequest._retry = true;
       const refresh = tokenStore.getRefresh();
       if (!refresh) {
@@ -43,7 +53,7 @@ api.interceptors.response.use(
       try {
         if (!refreshPromise) {
           refreshPromise = axios
-            .post("/api/auth/refresh/", { refresh })
+            .post<RefreshResponse>("/api/auth/refresh/", { refresh })
             .then((res) => {
               tokenStore.setTokens(res.data.access, res.data.refresh);
               return res.data.access;

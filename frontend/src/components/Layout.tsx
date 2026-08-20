@@ -1,7 +1,13 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-const navItems = [
+interface NavItem {
+  to: string;
+  label: string;
+  end?: boolean;
+}
+
+const navItems: NavItem[] = [
   { to: "/", label: "Dashboard", end: true },
   { to: "/billing", label: "Billing / POS" },
   { to: "/sales", label: "Sales" },

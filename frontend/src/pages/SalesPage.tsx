@@ -1,13 +1,20 @@
 import { useEffect, useState } from "react";
 import api from "../api/client";
 import { openInvoicePdf } from "../utils/downloadInvoice";
+import type { PaginatedResponse, Sale, SaleStatus } from "../types";
+
+function unwrap<T>(data: PaginatedResponse<T> | T[]): T[] {
+  return Array.isArray(data) ? data : data.results;
+}
 
 export default function SalesPage() {
-  const [sales, setSales] = useState([]);
-  const [statusFilter, setStatusFilter] = useState("");
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [statusFilter, setStatusFilter] = useState<SaleStatus | "">("");
 
-  const loadSales = (status = "") => {
-    api.get("/sales/", { params: status ? { status } : {} }).then((res) => setSales(res.data.results ?? res.data));
+  const loadSales = (status: SaleStatus | "" = "") => {
+    api
+      .get<PaginatedResponse<Sale> | Sale[]>("/sales/", { params: status ? { status } : {} })
+      .then((res) => setSales(unwrap(res.data)));
   };
 
   useEffect(() => {
@@ -18,7 +25,7 @@ export default function SalesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-800">Sales</h1>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border rounded px-3 py-2 text-sm">
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as SaleStatus | "")} className="border rounded px-3 py-2 text-sm">
           <option value="">All</option>
           <option value="completed">Completed</option>
           <option value="draft">Held / Draft</option>

@@ -3,6 +3,7 @@ import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
 import LoginPage from "./pages/Login/LoginPage";
+import SignupPage from "./pages/Signup/SignupPage";
 import DashboardPage from "./pages/Dashboard/DashboardPage";
 import ProductsPage from "./pages/Products/ProductsPage";
 import SuppliersPage from "./pages/Suppliers/SuppliersPage";
@@ -20,6 +21,8 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/register" element={<SignupPage />} />
           <Route
             path="/"
             element={

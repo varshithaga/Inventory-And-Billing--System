@@ -42,12 +42,33 @@ from .serializers import (
     StockMovementSerializer,
     SupplierSerializer,
     UserSerializer,
+    RegisterSerializer,
 )
 
 
 # ============================================================================
 # AUTH & USERS
 # ============================================================================
+
+class RegisterView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            refresh = RefreshToken.for_user(user)
+            user_data = UserSerializer(user).data
+            return Response(
+                {
+                    "access": str(refresh.access_token),
+                    "refresh": str(refresh),
+                    "user": user_data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class MeView(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer

@@ -269,7 +269,7 @@ class Command(BaseCommand):
 
     # -- seeding: sales (draws down the shelves) -------------------------
 
-    def _create_sale(self, customer, branch, sale_date, items, payments, user, status, invoice_number, sale_discount=Decimal("0")):
+    def _create_sale(self, customer, branch, sale_date, items, payments, user, status, invoice_number, sale_discount=Decimal("0"), payment_mode_override=None):
         subtotal = Decimal("0")
         tax_amount = Decimal("0")
         prepared = []
@@ -295,7 +295,7 @@ class Command(BaseCommand):
 
         total_amount = d(subtotal - sale_discount + tax_amount)
         amount_paid = d(sum((p["amount"] for p in payments), Decimal("0"))) if status == Sale.Status.COMPLETED else Decimal("0")
-        payment_mode = (
+        payment_mode = payment_mode_override or (
             Sale.PaymentMode.SPLIT if len(payments) > 1 else
             (payments[0]["mode"] if payments else Sale.PaymentMode.CASH)
         )
@@ -403,7 +403,11 @@ class Command(BaseCommand):
                     payments = [{"mode": modes[0], "amount": half}, {"mode": modes[1], "amount": d(line_total_estimate + half)}]
 
             discount = d(sum(i["quantity"] * i["unit_price"] for i in items) * Decimal("0.03")) if has_discount else Decimal("0")
-            self._create_sale(customer, branch, sale_date, items, payments, user, status, invoice_number, discount)
+            payment_mode_override = Sale.PaymentMode.CREDIT if "credit" in modes else None
+            self._create_sale(
+                customer, branch, sale_date, items, payments, user, status, invoice_number, discount,
+                payment_mode_override=payment_mode_override,
+            )
 
         ShopProfile.objects.filter(pk=shop_profile.pk).update(invoice_next_number=invoice_counter)
 
@@ -437,9 +441,10 @@ class Command(BaseCommand):
                 message=f"{product.name} is at {product.stock_quantity} {product.unit}, below the threshold of {product.low_stock_threshold}.",
                 is_read=False,
             )
-        indebted = [c for c in customers if c.outstanding_balance and Customer.objects.get(pk=c.pk).outstanding_balance > 0][:2]
-        for customer in indebted:
-            fresh = Customer.objects.get(pk=customer.pk)
+        # customers is a list of stale in-memory instances (created before sales
+        # ran), so re-query the fresh balances rather than trusting c.outstanding_balance.
+        indebted = list(Customer.objects.filter(pk__in=[c.pk for c in customers], outstanding_balance__gt=0)[:2])
+        for fresh in indebted:
             Notification.objects.create(
                 notification_type=Notification.NotificationType.PAYMENT_DUE,
                 title=f"Payment due: {fresh.name}",

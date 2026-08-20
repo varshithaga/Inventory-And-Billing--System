@@ -19,6 +19,8 @@ router.register("users", views.UserViewSet)
 
 urlpatterns = [
     path("auth/login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("auth/register/", views.RegisterView.as_view(), name="auth_register"),
+    path("auth/signup/", views.RegisterView.as_view(), name="auth_signup"),
     path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("auth/google/", views.GoogleLoginView.as_view(), name="google_login"),
     path("auth/me/", views.MeView.as_view(), name="me"),

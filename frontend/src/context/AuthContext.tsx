@@ -1,12 +1,24 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import api from "../api/client";
 import { clearTokens, getAccessToken, setTokens } from "../api/access";
-import type { User } from "../types";
+import type { User, UserRole } from "../types";
+
+export interface SignupPayload {
+  username: string;
+  password: string;
+  confirm_password: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  role?: UserRole;
+}
 
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<User>;
+  signup: (payload: SignupPayload) => Promise<User>;
   loginWithGoogle: (credential: string) => Promise<User>;
   logout: () => void;
 }
@@ -43,6 +55,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return me.data;
   };
 
+  const signup = async (payload: SignupPayload): Promise<User> => {
+    const res = await api.post("/auth/signup/", payload);
+    setTokens(res.data.access, res.data.refresh);
+    const userObj = res.data.user || (await api.get<User>("/auth/me/")).data;
+    setUser(userObj);
+    return userObj;
+  };
+
   const loginWithGoogle = async (credential: string): Promise<User> => {
     const res = await api.post("/auth/google/", { credential });
     setTokens(res.data.access, res.data.refresh);
@@ -57,7 +77,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, loading, login, signup, loginWithGoogle, logout }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 

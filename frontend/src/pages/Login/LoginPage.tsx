@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Logo from "../../components/Logo";
 
@@ -32,10 +32,20 @@ export default function LoginPage() {
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl pointer-events-none" />
 
       <div className="w-full max-w-md bg-white/95 backdrop-blur-xl shadow-2xl rounded-3xl border border-violet-200/80 p-8 space-y-6 relative z-10">
+        {/* Header */}
         <div className="text-center space-y-2 flex flex-col items-center">
-          <Logo size="xl" showText={false} className="mb-2" />
-          <h1 className="text-2xl font-black text-violet-950 tracking-tight">Inventory & POS</h1>
-          <p className="text-xs text-violet-600 font-bold uppercase tracking-wider">Enterprise Suite Sign-In</p>
+          <Logo size="xl" showText={false} className="mb-1" />
+          <h1 className="text-2xl font-black text-violet-950 tracking-tight">System Sign-In</h1>
+          <p className="text-xs text-violet-600 font-bold uppercase tracking-wider">Access Enterprise Suite</p>
+        </div>
+
+        {/* Role Support Badges */}
+        <div className="flex items-center justify-center gap-2 bg-violet-50/70 p-2.5 rounded-2xl border border-violet-100 text-[11px] font-extrabold text-violet-900">
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-600" /> Admin</span>
+          <span className="text-violet-300">•</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-violet-500" /> Manager</span>
+          <span className="text-violet-300">•</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Staff/Cashier</span>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -84,6 +94,15 @@ export default function LoginPage() {
             )}
           </button>
         </form>
+
+        <div className="text-center pt-2 border-t border-violet-100">
+          <p className="text-xs text-violet-800 font-medium">
+            New Store Admin?{" "}
+            <Link to="/signup" className="font-extrabold text-violet-950 hover:underline">
+              Create Admin Account
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

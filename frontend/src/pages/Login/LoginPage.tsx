@@ -1,17 +1,15 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+import Logo from "../../components/Logo";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const { login, loginWithGoogle } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
-  const googleButtonRef = useRef<HTMLDivElement>(null);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -27,54 +25,6 @@ export default function LoginPage() {
     }
   };
 
-  useEffect(() => {
-    if (!GOOGLE_CLIENT_ID || !googleButtonRef.current) return;
-
-    const handleGoogleCredential = async (response: GoogleCredentialResponse) => {
-      setError("");
-      setSubmitting(true);
-      try {
-        await loginWithGoogle(response.credential);
-        navigate("/", { replace: true });
-      } catch {
-        setError("Google sign-in failed. Please try again.");
-      } finally {
-        setSubmitting(false);
-      }
-    };
-
-    const initializeGoogleButton = () => {
-      if (!window.google || !googleButtonRef.current) return;
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleGoogleCredential,
-      });
-      window.google.accounts.id.renderButton(googleButtonRef.current, {
-        theme: "outline",
-        size: "large",
-        width: 336,
-        text: "signin_with",
-      });
-    };
-
-    if (window.google) {
-      initializeGoogleButton();
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    script.onload = initializeGoogleButton;
-    document.head.appendChild(script);
-
-    return () => {
-      document.head.removeChild(script);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-950 via-violet-900 to-indigo-950 font-sans p-4 relative overflow-hidden">
       {/* Background glowing blurred circles */}
@@ -82,14 +32,10 @@ export default function LoginPage() {
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl pointer-events-none" />
 
       <div className="w-full max-w-md bg-white/95 backdrop-blur-xl shadow-2xl rounded-3xl border border-violet-200/80 p-8 space-y-6 relative z-10">
-        <div className="text-center space-y-2">
-          <div className="w-16 h-16 bg-gradient-to-tr from-purple-600 via-violet-600 to-indigo-400 text-white rounded-3xl shadow-lg shadow-purple-600/40 flex items-center justify-center mx-auto mb-3">
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-black text-violet-950 tracking-tight">Inventory & Billing</h1>
-          <p className="text-xs text-violet-600 font-bold uppercase tracking-wider">Enterprise POS Sign-In</p>
+        <div className="text-center space-y-2 flex flex-col items-center">
+          <Logo size="xl" showText={false} className="mb-2" />
+          <h1 className="text-2xl font-black text-violet-950 tracking-tight">Inventory & POS</h1>
+          <p className="text-xs text-violet-600 font-bold uppercase tracking-wider">Enterprise Suite Sign-In</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -105,7 +51,7 @@ export default function LoginPage() {
           <div>
             <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">Username</label>
             <input
-              className="w-full text-sm font-semibold border border-violet-200 rounded-xl px-4 py-3 bg-violet-50/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition"
+              className="w-full text-sm font-semibold border border-violet-200 rounded-xl px-4 py-3 bg-violet-50/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition text-violet-950"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter username"
@@ -118,7 +64,7 @@ export default function LoginPage() {
             <label className="block text-xs font-bold text-violet-950 uppercase tracking-wider mb-1.5">Password</label>
             <input
               type="password"
-              className="w-full text-sm font-semibold border border-violet-200 rounded-xl px-4 py-3 bg-violet-50/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition"
+              className="w-full text-sm font-semibold border border-violet-200 rounded-xl px-4 py-3 bg-violet-50/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition text-violet-950"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
@@ -138,17 +84,6 @@ export default function LoginPage() {
             )}
           </button>
         </form>
-
-        {GOOGLE_CLIENT_ID && (
-          <>
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-violet-200" />
-              <span className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">Or</span>
-              <div className="flex-1 h-px bg-violet-200" />
-            </div>
-            <div ref={googleButtonRef} className="flex justify-center" />
-          </>
-        )}
       </div>
     </div>
   );

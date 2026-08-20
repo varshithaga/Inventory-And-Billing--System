@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import Logo from "./Logo";
 
 interface NavItem {
   to: string;
@@ -122,19 +123,7 @@ export default function Layout() {
 
         {/* Brand Header */}
         <div className="px-6 py-6 border-b border-violet-800/50 flex items-center gap-3 relative z-10">
-          <div className="p-2.5 bg-gradient-to-tr from-purple-600 via-violet-600 to-indigo-400 rounded-2xl shadow-lg shadow-purple-600/40 text-white">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-base font-extrabold tracking-tight bg-gradient-to-r from-white via-violet-100 to-purple-200 bg-clip-text text-transparent">
-              Inventory & POS
-            </h1>
-            <p className="text-[10px] font-bold tracking-widest uppercase text-violet-300 mt-0.5">
-              Enterprise Suite
-            </p>
-          </div>
+          <Logo size="md" />
         </div>
 
         {/* Navigation Items */}

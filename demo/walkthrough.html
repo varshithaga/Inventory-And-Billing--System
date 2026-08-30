@@ -1,0 +1,688 @@
+<title>Inventory &amp; Billing System</title>
+<meta name="description" content="An auto-playing walkthrough of the Inventory & Billing POS system, screen by screen, on the seeded demo dataset." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" />
+
+<style>
+  :root {
+    --ground: #f5f1fe;
+    --surface: #ffffff;
+    --surface-2: #f2ecfe;
+    --ink: #241640;
+    --ink-soft: #5c4c7e;
+    --ink-faint: #8a7cad;
+    --line: #e7ddf8;
+    --accent: #7c3aed;
+    --accent-deep: #5b21b6;
+    --accent-2: #a855f7;
+    --good: #047857;
+    --good-bg: #ecfdf5;
+    --good-line: #a7f3d0;
+    --warn: #be123c;
+    --warn-bg: #fff1f3;
+    --warn-line: #fecdd3;
+    --hero-from: #3b0764;
+    --hero-via: #4c1d95;
+    --hero-to: #312e81;
+    --on-hero: #f4f0ff;
+    --on-hero-soft: #c9bcf0;
+    --shadow: 0 18px 40px -18px rgba(76, 29, 149, .45);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #100b1c;
+      --surface: #1b1531;
+      --surface-2: #241c3f;
+      --ink: #ece7f9;
+      --ink-soft: #ab a1cc;
+      --ink-soft: #aba1cc;
+      --ink-faint: #7d719f;
+      --line: #322a4e;
+      --accent: #a78bfa;
+      --accent-deep: #8b5cf6;
+      --accent-2: #c4b5fd;
+      --good: #34d399;
+      --good-bg: #052a20;
+      --good-line: #0f5943;
+      --warn: #fb7185;
+      --warn-bg: #2c0d15;
+      --warn-line: #6b2233;
+      --hero-from: #2a0a45;
+      --hero-via: #3b1178;
+      --hero-to: #1e1b4b;
+      --on-hero: #f4f0ff;
+      --on-hero-soft: #b9a9e8;
+      --shadow: 0 18px 44px -20px rgba(0, 0, 0, .7);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #100b1c;
+    --surface: #1b1531;
+    --surface-2: #241c3f;
+    --ink: #ece7f9;
+    --ink-soft: #aba1cc;
+    --ink-faint: #7d719f;
+    --line: #322a4e;
+    --accent: #a78bfa;
+    --accent-deep: #8b5cf6;
+    --accent-2: #c4b5fd;
+    --good: #34d399;
+    --good-bg: #052a20;
+    --good-line: #0f5943;
+    --warn: #fb7185;
+    --warn-bg: #2c0d15;
+    --warn-line: #6b2233;
+    --hero-from: #2a0a45;
+    --hero-via: #3b1178;
+    --hero-to: #1e1b4b;
+    --on-hero: #f4f0ff;
+    --on-hero-soft: #b9a9e8;
+    --shadow: 0 18px 44px -20px rgba(0, 0, 0, .7);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 30px 20px 64px;
+  }
+
+  /* ---- page header ---- */
+  .masthead { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  .masthead h1 {
+    font-family: "Manrope", sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.35rem, 1rem + 1.6vw, 2rem);
+    letter-spacing: -.02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .masthead .lede { color: var(--ink-soft); font-size: .92rem; max-width: 46ch; margin: 6px 0 0; }
+  .stackbar { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    font-size: .68rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    padding: 5px 9px; border-radius: 999px;
+    background: var(--surface-2); color: var(--accent-deep); border: 1px solid var(--line);
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chip { color: var(--accent-2); } }
+  :root[data-theme="dark"] .chip { color: var(--accent-2); }
+
+  /* ---- player ---- */
+  .player {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    border-radius: 20px;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+  }
+  .scene {
+    position: absolute; inset: 0;
+    padding: clamp(14px, 2.4vw, 26px);
+    display: flex; flex-direction: column; gap: 12px;
+    opacity: 0; visibility: hidden;
+    transition: opacity .5s ease;
+    overflow: hidden;
+  }
+  .scene[data-active="true"] { opacity: 1; visibility: visible; }
+  @media (prefers-reduced-motion: reduce) {
+    .scene { transition: none; }
+  }
+
+  /* ---- shared app-screen vocabulary ---- */
+  .hero {
+    background: linear-gradient(105deg, var(--hero-from), var(--hero-via), var(--hero-to));
+    color: var(--on-hero);
+    border-radius: 16px;
+    padding: clamp(12px, 2vw, 20px) clamp(14px, 2.2vw, 24px);
+    display: flex; align-items: center; gap: 14px;
+    flex: none;
+  }
+  .hero .glyph {
+    width: 40px; height: 40px; border-radius: 12px; flex: none;
+    display: grid; place-items: center;
+    background: linear-gradient(140deg, var(--accent-2), var(--accent-deep));
+    box-shadow: 0 8px 20px -6px rgba(0,0,0,.5);
+  }
+  .hero .glyph svg { width: 22px; height: 22px; stroke: #fff; }
+  .hero .eyebrow { font-size: .62rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--on-hero-soft); }
+  .hero h2 { font-family: "Manrope", sans-serif; font-weight: 800; letter-spacing: -.02em; margin: 2px 0 0; font-size: clamp(1.05rem, .8rem + 1.1vw, 1.5rem); }
+
+  .grid { display: grid; gap: 12px; min-height: 0; }
+  .grid.k4 { grid-template-columns: repeat(4, 1fr); }
+  .grid.k2 { grid-template-columns: 1fr 1fr; }
+  .grid.k3 { grid-template-columns: 1.1fr .9fr; }
+  .col { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; padding: 14px 16px;
+    min-height: 0;
+  }
+  .card.tint { background: var(--surface-2); }
+  .card h3 { margin: 0 0 4px; font-family: "Manrope", sans-serif; font-size: .74rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
+
+  .kpi .label { font-size: .64rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-faint); }
+  .kpi .value { font-family: "Manrope", sans-serif; font-weight: 800; font-size: clamp(1.05rem, .7rem + 1.1vw, 1.6rem); letter-spacing: -.02em; margin-top: 2px; }
+  .kpi .sub { font-size: .72rem; color: var(--ink-soft); margin-top: 3px; }
+  .kpi .value.good { color: var(--good); }
+  .kpi .value.warn { color: var(--warn); }
+
+  table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+  thead th {
+    background: linear-gradient(105deg, var(--hero-from), var(--hero-via));
+    color: var(--on-hero-soft);
+    font-size: .6rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    text-align: left; padding: 8px 10px;
+  }
+  thead th:first-child { border-radius: 8px 0 0 8px; }
+  thead th:last-child { border-radius: 0 8px 8px 0; }
+  tbody td { padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-weight: 500; }
+  .strong { font-weight: 700; color: var(--ink); }
+
+  .pill { display: inline-block; font-size: .64rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; }
+  .pill.good { background: var(--good-bg); color: var(--good); border: 1px solid var(--good-line); }
+  .pill.warn { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-line); }
+  .pill.mute { background: var(--surface-2); color: var(--ink-soft); border: 1px solid var(--line); }
+
+  .searchbar {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 9px 12px; color: var(--ink-faint); font-size: .82rem; flex: none;
+  }
+  .searchbar svg { width: 15px; height: 15px; stroke: var(--ink-faint); flex: none; }
+  .searchbar .typed { color: var(--ink); font-weight: 600; }
+  .caret { display: inline-block; width: 1px; height: 1em; background: var(--accent); margin-left: 1px; vertical-align: -2px; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .caret { animation: none; } }
+
+  /* title + closing cards */
+  .cardscene { align-items: center; justify-content: center; text-align: center; background: linear-gradient(150deg, var(--hero-from), var(--hero-via) 55%, var(--hero-to)); color: var(--on-hero); }
+  .cardscene .kicker { font-size: .7rem; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--on-hero-soft); }
+  .cardscene h2 { font-family: "Manrope", sans-serif; font-weight: 800; font-size: clamp(1.6rem, 1rem + 3vw, 3rem); letter-spacing: -.03em; margin: 12px 0 10px; text-wrap: balance; }
+  .cardscene p { max-width: 52ch; color: var(--on-hero-soft); margin: 0 auto; font-size: .95rem; }
+  .cardscene .metarow { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 22px; }
+  .cardscene .metarow span { font-size: .72rem; font-weight: 600; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.18); color: var(--on-hero); }
+
+  /* login mock */
+  .login { align-items: center; justify-content: center; background: linear-gradient(150deg, var(--hero-from), var(--hero-via) 55%, var(--hero-to)); }
+  .login .box { background: var(--surface); color: var(--ink); border-radius: 18px; padding: 26px 28px; width: min(360px, 82%); border: 1px solid var(--line); box-shadow: 0 30px 60px -20px rgba(0,0,0,.5); }
+  .login .box .mark { width: 44px; height: 44px; border-radius: 13px; margin: 0 auto 12px; display: grid; place-items: center; background: linear-gradient(140deg, var(--accent-2), var(--accent-deep)); }
+  .login .box .mark svg { width: 24px; height: 24px; stroke: #fff; }
+  .login h2 { text-align: center; font-family: "Manrope", sans-serif; font-weight: 800; margin: 0 0 3px; font-size: 1.15rem; }
+  .login .role { text-align: center; font-size: .62rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; }
+  .field { font-size: .6rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); margin: 10px 0 4px; }
+  .input { border: 1px solid var(--line); background: var(--surface-2); border-radius: 10px; padding: 9px 11px; font-size: .84rem; font-weight: 600; }
+  .btn-primary { margin-top: 16px; width: 100%; text-align: center; padding: 10px; border-radius: 12px; background: linear-gradient(100deg, var(--accent-deep), var(--accent)); color: #fff; font-weight: 700; font-size: .84rem; }
+
+  /* invoice */
+  .invoice-scene { background: var(--surface-2); }
+  .invoice {
+    background: var(--surface); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 12px; padding: clamp(14px, 2vw, 22px);
+    width: 100%; max-width: 620px; margin: 0 auto; overflow: hidden;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .invoice .top { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+  .invoice .shop { font-family: "Manrope", sans-serif; font-weight: 800; font-size: 1.05rem; }
+  .invoice .muted { color: var(--ink-soft); font-size: .72rem; }
+  .invoice .tag { text-align: right; font-size: .72rem; }
+  .invoice .tag .big { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: .92rem; color: var(--accent-deep); }
+  .totrow { display: flex; justify-content: flex-end; gap: 26px; font-size: .78rem; }
+  .totrow.grand { font-family: "Manrope", sans-serif; font-weight: 800; font-size: 1rem; border-top: 1px solid var(--line); padding-top: 6px; }
+
+  /* rbac split */
+  .rbac { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; min-height: 0; }
+  .navcol { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 5px; overflow: hidden; }
+  .navcol .who { font-family: "Manrope", sans-serif; font-weight: 800; font-size: .82rem; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+  .navitem { display: flex; align-items: center; gap: 8px; font-size: .76rem; font-weight: 600; padding: 6px 9px; border-radius: 9px; }
+  .navitem.on { background: var(--surface-2); color: var(--ink); }
+  .navitem.ro { color: var(--ink-soft); }
+  .navitem.ro::after { content: "read-only"; margin-left: auto; font-size: .56rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-faint); }
+  .navitem.gone { color: var(--ink-faint); text-decoration: line-through; opacity: .55; }
+  .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--accent); flex: none; }
+
+  .footnote { font-size: .72rem; color: var(--ink-faint); flex: none; margin-top: auto; }
+
+  /* ---- controls ---- */
+  .controls { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .segments { display: flex; gap: 5px; }
+  .seg { flex: 1; height: 5px; border-radius: 999px; background: var(--line); overflow: hidden; cursor: pointer; border: 0; padding: 0; }
+  .seg .fill { display: block; height: 100%; width: 0%; background: var(--accent); border-radius: 999px; }
+  .seg[data-state="done"] .fill { width: 100%; }
+  .transport { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .tbtn {
+    display: inline-grid; place-items: center;
+    width: 38px; height: 38px; border-radius: 11px;
+    background: var(--surface); border: 1px solid var(--line); color: var(--ink);
+    cursor: pointer;
+  }
+  .tbtn:hover { border-color: var(--accent); color: var(--accent); }
+  .tbtn svg { width: 17px; height: 17px; fill: currentColor; }
+  .tbtn.play { width: 46px; height: 46px; background: linear-gradient(100deg, var(--accent-deep), var(--accent)); color: #fff; border: 0; }
+  .tbtn:focus-visible, .seg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .counter { font-family: "JetBrains Mono", monospace; font-size: .78rem; color: var(--ink-soft); font-weight: 700; }
+  .caption {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 11px 15px; font-size: .88rem; color: var(--ink);
+    min-height: 44px; display: flex; align-items: center;
+  }
+  .caption b { color: var(--accent-deep); font-weight: 700; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .caption b { color: var(--accent-2); } }
+  :root[data-theme="dark"] .caption b { color: var(--accent-2); }
+
+  .notes { margin-top: 34px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .notes h4 { font-family: "Manrope", sans-serif; font-size: .8rem; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 8px; }
+  .notes ol, .notes ul { margin: 0; padding-left: 1.15rem; font-size: .84rem; color: var(--ink-soft); }
+  .notes li { margin: 5px 0; }
+  .notes li b { color: var(--ink); font-weight: 600; }
+
+  @media (max-width: 760px) {
+    .grid.k4 { grid-template-columns: 1fr 1fr; }
+    .grid.k2, .grid.k3, .rbac { grid-template-columns: 1fr; }
+    .notes { grid-template-columns: 1fr; }
+    .player { aspect-ratio: 4 / 5; }
+    .hide-sm { display: none !important; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <h1>Inventory &amp; Billing System</h1>
+      <p class="lede">An auto-playing walkthrough of the retail POS &mdash; screen by screen, on the seeded demo dataset.</p>
+    </div>
+    <div class="stackbar">
+      <span class="chip">Django REST</span>
+      <span class="chip">React 19</span>
+      <span class="chip">SQLite</span>
+      <span class="chip">JWT + RBAC</span>
+    </div>
+  </header>
+
+  <div class="player" id="player" aria-label="Product walkthrough player">
+
+    <!-- 1 — TITLE -->
+    <section class="scene cardscene" data-dur="4500" data-caption="A full-stack inventory &amp; point-of-sale system for a <b>multi-branch retail shop</b> &mdash; procurement, stock, GST billing and reporting in one place.">
+      <span class="kicker">Walkthrough</span>
+      <h2>From stockroom to counter, in one system</h2>
+      <p>Buy stock from suppliers &rarr; hold it per branch &rarr; sell it at a GST-compliant POS &rarr; track dues, loyalty and revenue.</p>
+      <div class="metarow">
+        <span>3 branches</span><span>24 products</span><span>10 customers</span><span>8 purchase orders</span><span>22 sales</span>
+      </div>
+    </section>
+
+    <!-- 2 — LOGIN -->
+    <section class="scene login" data-dur="5000" data-caption="Sign in with username / password or <b>Google</b>. Access is role-based &mdash; here we enter as an <b>Admin</b>, who sees everything.">
+      <div class="box">
+        <div class="mark"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg></div>
+        <h2>System Sign-In</h2>
+        <div class="role">Admin &bull; Manager &bull; Staff</div>
+        <div class="col" style="gap:0">
+          <div class="field">Username</div>
+          <div class="input">admin</div>
+          <div class="field">Password</div>
+          <div class="input">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</div>
+          <div class="btn-primary">Sign In to System</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 — DASHBOARD -->
+    <section class="scene" data-dur="7500" data-caption="The <b>dashboard</b> opens on load: revenue today and this month, today's payment split, low-stock alerts, top sellers and recent invoices &mdash; all from one aggregate endpoint.">
+      <div class="hero">
+        <span class="glyph"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg></span>
+        <div><div class="eyebrow">Live Business Performance</div><h2>Executive Dashboard</h2></div>
+      </div>
+      <div class="grid k4">
+        <div class="card kpi"><div class="label">Today's Revenue</div><div class="value good">&#8377;1,284.60</div><div class="sub">3 bills today</div></div>
+        <div class="card kpi"><div class="label">This Month</div><div class="value">&#8377;18,742.15</div><div class="sub">18 invoices</div></div>
+        <div class="card kpi"><div class="label">Low Stock</div><div class="value warn">2</div><div class="sub">below threshold</div></div>
+        <div class="card kpi"><div class="label">Top Seller</div><div class="value" style="font-size:1rem">Coca-Cola 750ml</div><div class="sub">this month</div></div>
+      </div>
+      <div class="grid k2" style="flex:1; min-height:0">
+        <div class="card" style="overflow:hidden">
+          <h3>Low stock warnings</h3>
+          <table>
+            <thead><tr><th>Product</th><th class="num">Avail</th><th class="num">Min</th></tr></thead>
+            <tbody>
+              <tr><td class="strong">Nescafe Classic Coffee 200g</td><td class="num" style="color:var(--warn);font-weight:700">6</td><td class="num">8</td></tr>
+              <tr><td class="strong">Amul Butter 500g</td><td class="num" style="color:var(--warn);font-weight:700">8</td><td class="num">10</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card" style="overflow:hidden">
+          <h3>Recent sale invoices</h3>
+          <table>
+            <thead><tr><th>Invoice</th><th>Customer</th><th class="num">Amount</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">INV-00018</td><td class="strong">Priya Sharma</td><td class="num strong">&#8377;255.90</td></tr>
+              <tr><td class="mono">INV-00017</td><td class="strong">Walk-in</td><td class="num strong">&#8377;412.30</td></tr>
+              <tr><td class="mono">INV-00016</td><td class="strong">Vikram Singh</td><td class="num strong">&#8377;616.40</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card tint">
+        <h3>Today's payment mode breakdown</h3>
+        <div style="display:flex; gap:18px; flex-wrap:wrap; font-size:.8rem">
+          <span><b class="strong">UPI</b> &nbsp;&#8377;642.30</span>
+          <span><b class="strong">Cash</b> &nbsp;&#8377;448.20</span>
+          <span><b class="strong">Card</b> &nbsp;&#8377;194.10</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 — PRODUCTS -->
+    <section class="scene" data-dur="6800" data-caption="The <b>catalog</b>: each product carries a selling price, cost price, GST rate, unit, HSN code and a low-stock threshold. Search matches name, SKU or barcode; blank SKUs auto-generate.">
+      <div class="hero">
+        <span class="glyph"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></span>
+        <div><div class="eyebrow">Catalog Directory</div><h2>Products &amp; Categories</h2></div>
+      </div>
+      <div class="searchbar"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 18a7 7 0 100-14 7 7 0 000 14z"/></svg><span class="typed">amul</span><span class="caret"></span></div>
+      <div class="card" style="flex:1; overflow:hidden">
+        <table>
+          <thead><tr><th>Product</th><th>SKU</th><th>Category</th><th class="num">Price</th><th class="num">GST</th><th class="num">Stock</th></tr></thead>
+          <tbody>
+            <tr><td class="strong">Amul Gold Milk 1L</td><td class="mono">DBK-001</td><td>Dairy &amp; Bakery</td><td class="num">&#8377;68.00</td><td class="num">5%</td><td class="num">120</td></tr>
+            <tr><td class="strong">Amul Butter 500g</td><td class="mono">DBK-002</td><td>Dairy &amp; Bakery</td><td class="num">&#8377;265.00</td><td class="num">12%</td><td class="num"><span class="pill warn">8 &bull; low</span></td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap">
+          <span class="pill mute">Groceries &amp; Staples</span><span class="pill mute">Beverages</span><span class="pill mute">Dairy &amp; Bakery</span><span class="pill mute">Snacks &amp; Namkeen</span><span class="pill mute">Personal Care</span><span class="pill mute">Household</span><span class="pill mute">Stationery</span>
+        </div>
+      </div>
+      <div class="footnote">7 categories &bull; 24 products &bull; GST presets: 5 / 12 / 18 / 28 %</div>
+    </section>
+
+    <!-- 5 — PURCHASES -->
+    <section class="scene" data-dur="7200" data-caption="Stock comes in through <b>purchase orders</b> &mdash; supplier, branch, itemised cost + GST, and a status from draft to paid. Receiving one adds stock and writes a ledger entry.">
+      <div class="hero">
+        <span class="glyph"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.6.6-.2 1.7.7 1.7H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/></svg></span>
+        <div><div class="eyebrow">Procurement</div><h2>Purchases &amp; Suppliers</h2></div>
+      </div>
+      <div class="grid" style="grid-template-columns:1fr; flex:1; min-height:0">
+        <div class="card" style="overflow:hidden">
+          <h3>Purchase order &nbsp;<span class="mono" style="text-transform:none">PO-011042</span></h3>
+          <div class="muted" style="font-size:.74rem; color:var(--ink-soft); margin-bottom:8px">FreshFarm Distributors &bull; Main Branch - MG Road &bull; <span class="pill good">Paid</span></div>
+          <table>
+            <thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Cost</th><th class="num">GST</th><th class="num">Line</th></tr></thead>
+            <tbody>
+              <tr><td class="strong">Tata Salt 1kg</td><td class="num">60</td><td class="num">&#8377;18.00</td><td class="num">5%</td><td class="num">&#8377;1,134.00</td></tr>
+              <tr><td class="strong">Fortune Sunflower Oil 1L</td><td class="num">40</td><td class="num">&#8377;118.00</td><td class="num">5%</td><td class="num">&#8377;4,956.00</td></tr>
+              <tr><td class="strong">India Gate Basmati Rice 5kg</td><td class="num">20</td><td class="num">&#8377;480.00</td><td class="num">5%</td><td class="num">&#8377;10,080.00</td></tr>
+            </tbody>
+          </table>
+          <div class="totrow" style="margin-top:10px"><span>Subtotal</span><span>&#8377;15,400.00</span></div>
+          <div class="totrow"><span>GST</span><span>&#8377;770.00</span></div>
+          <div class="totrow grand"><span>Total &bull; paid in full</span><span>&#8377;16,170.00</span></div>
+        </div>
+      </div>
+      <div class="footnote">8 purchase orders across 5 suppliers &bull; balance-due tracked per supplier</div>
+    </section>
+
+    <!-- 6 — STOCK LEDGER -->
+    <section class="scene" data-dur="7000" data-caption="Every stock change is logged: purchases <b>in</b>, sales <b>out</b>, manual <b>adjustments</b>, branch transfers. Per-branch levels are the source of truth; the product total stays in sync automatically.">
+      <div class="hero">
+        <span class="glyph"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></span>
+        <div><div class="eyebrow">Audit Ledger</div><h2>Stock &amp; Movements</h2></div>
+      </div>
+      <div class="searchbar"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 18a7 7 0 100-14 7 7 0 000 14z"/></svg><span class="typed">Coca-Cola 750ml</span><span class="caret"></span></div>
+      <div class="card" style="flex:1; overflow:hidden">
+        <table>
+          <thead><tr><th>When</th><th>Type</th><th>Branch</th><th class="num">Qty</th><th>Reference</th></tr></thead>
+          <tbody>
+            <tr><td>6 weeks ago</td><td><span class="pill good">In</span></td><td>MG Road</td><td class="num">+72</td><td class="mono">purchase&nbsp;#3</td></tr>
+            <tr><td>12 days ago</td><td><span class="pill mute">Out</span></td><td>MG Road</td><td class="num">&minus;4</td><td class="mono">sale&nbsp;#12</td></tr>
+            <tr><td>5 days ago</td><td><span class="pill mute">Out</span></td><td>MG Road</td><td class="num">&minus;3</td><td class="mono">sale&nbsp;#16</td></tr>
+            <tr><td>2 days ago</td><td><span class="pill warn">Adjust</span></td><td>MG Road</td><td class="num">&minus;6</td><td>damaged write-off</td></tr>
+            <tr><td>today</td><td><span class="pill mute">Out</span></td><td>MG Road</td><td class="num">&minus;3</td><td class="mono">sale&nbsp;#18</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="footnote">63 movements logged &bull; current on-hand at MG Road: <b class="strong">53</b></div>
+    </section>
+
+    <!-- 7 — POS -->
+    <section class="scene" data-dur="8000" data-caption="The <b>POS terminal</b>: add items, set qty and per-line discount, attach a customer, then <b>split the payment</b> &mdash; &#8377;150 cash + &#8377;105.90 UPI. Checkout draws down stock and assigns an invoice number.">
+      <div class="hero">
+        <span class="glyph"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M9 11h.01M12 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg></span>
+        <div><div class="eyebrow">Point of Sale Terminal</div><h2>Billing &amp; Checkout</h2></div>
+      </div>
+      <div class="grid k3" style="flex:1; min-height:0">
+        <div class="card" style="overflow:hidden">
+          <table>
+            <thead><tr><th>Product</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Disc</th><th class="num">Line</th></tr></thead>
+            <tbody>
+              <tr><td class="strong">Coca-Cola 750ml</td><td class="num">3</td><td class="num">&#8377;40.00</td><td class="num">&mdash;</td><td class="num strong">&#8377;120.00</td></tr>
+              <tr><td class="strong">Lay's Classic Salted 90g</td><td class="num">2</td><td class="num">&#8377;20.00</td><td class="num">&mdash;</td><td class="num strong">&#8377;40.00</td></tr>
+              <tr><td class="strong">Parle-G Biscuits 800g</td><td class="num">1</td><td class="num">&#8377;75.00</td><td class="num">&#8377;10</td><td class="num strong">&#8377;65.00</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="col">
+          <div class="card tint">
+            <h3>Customer</h3>
+            <div class="strong">Priya Sharma</div>
+            <div style="font-size:.72rem; color:var(--ink-soft)">Karnataka &bull; 40 loyalty pts</div>
+          </div>
+          <div class="card">
+            <div style="display:flex; justify-content:space-between; font-size:.76rem"><span>Subtotal</span><span>&#8377;225.00</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:.76rem"><span>CGST + SGST</span><span>&#8377;30.90</span></div>
+            <div style="display:flex; justify-content:space-between; font-family:'Manrope'; font-weight:800; font-size:1rem; border-top:1px solid var(--line); margin-top:6px; padding-top:6px"><span>Grand Total</span><span>&#8377;255.90</span></div>
+          </div>
+          <div class="card tint">
+            <h3>Split payment</h3>
+            <div style="font-size:.76rem; display:flex; justify-content:space-between"><span>Cash</span><span>&#8377;150.00</span></div>
+            <div style="font-size:.76rem; display:flex; justify-content:space-between"><span>UPI / Online</span><span>&#8377;105.90</span></div>
+          </div>
+          <div class="btn-primary">Complete Checkout</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8 — INVOICE -->
+    <section class="scene invoice-scene" data-dur="7500" data-caption="One click produces the <b>GST invoice PDF</b> (ReportLab) &mdash; shop header, HSN codes, CGST and SGST split per line. Tax figures are snapshotted, so old invoices never drift.">
+      <div class="invoice">
+        <div class="top">
+          <div><div class="shop">My Shop</div><div class="muted">12 MG Road, Bengaluru 560001 &bull; GSTIN 29ABCDE1234F1Z5</div></div>
+          <div class="tag"><div>Tax Invoice</div><div class="big">INV-00001</div><div class="muted">30 Aug 2026</div></div>
+        </div>
+        <table>
+          <thead><tr><th>Item</th><th>HSN</th><th class="num">Qty</th><th class="num">Taxable</th><th class="num">CGST</th><th class="num">SGST</th><th class="num">Total</th></tr></thead>
+          <tbody>
+            <tr><td class="strong">Coca-Cola 750ml</td><td class="mono">2202</td><td class="num">3</td><td class="num">&#8377;120.00</td><td class="num">&#8377;7.20</td><td class="num">&#8377;7.20</td><td class="num strong">&#8377;134.40</td></tr>
+            <tr><td class="strong">Lay's Classic Salted 90g</td><td class="mono">1905</td><td class="num">2</td><td class="num">&#8377;40.00</td><td class="num">&#8377;2.40</td><td class="num">&#8377;2.40</td><td class="num strong">&#8377;44.80</td></tr>
+            <tr><td class="strong">Parle-G Biscuits 800g</td><td class="mono">1905</td><td class="num">1</td><td class="num">&#8377;65.00</td><td class="num">&#8377;5.85</td><td class="num">&#8377;5.85</td><td class="num strong">&#8377;76.70</td></tr>
+          </tbody>
+        </table>
+        <div class="totrow"><span>Taxable value</span><span>&#8377;225.00</span></div>
+        <div class="totrow"><span>CGST + SGST</span><span>&#8377;15.45 + &#8377;15.45</span></div>
+        <div class="totrow grand"><span>Grand Total</span><span>&#8377;255.90</span></div>
+        <div class="muted">Paid: &#8377;150.00 Cash + &#8377;105.90 UPI &bull; Balance &#8377;0.00</div>
+      </div>
+    </section>
+
+    <!-- 9 — RBAC -->
+    <section class="scene" data-dur="8000" data-caption="Access is <b>role-based</b>, enforced on the API and the UI alike. Log in as a cashier and Settings &amp; User Management disappear; the catalog and stock screens turn read-only.">
+      <div class="hero">
+        <span class="glyph"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.35a4 4 0 110 5.3M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.2M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg></span>
+        <div><div class="eyebrow">3-Tier Access Control</div><h2>Same app, scoped to the role</h2></div>
+      </div>
+      <div class="rbac" style="flex:1">
+        <div class="navcol">
+          <div class="who"><span class="dot"></span>Admin</div>
+          <div class="navitem on">Dashboard</div>
+          <div class="navitem on">Billing / POS</div>
+          <div class="navitem on">Sales History</div>
+          <div class="navitem on">Products</div>
+          <div class="navitem on">Stock &amp; Movements</div>
+          <div class="navitem on">Purchases</div>
+          <div class="navitem on">Suppliers</div>
+          <div class="navitem on">Customers</div>
+          <div class="navitem on">User Management</div>
+          <div class="navitem on">Store Settings</div>
+        </div>
+        <div class="navcol">
+          <div class="who"><span class="dot" style="background:var(--good)"></span>Staff / Cashier</div>
+          <div class="navitem on">Dashboard</div>
+          <div class="navitem on">Billing / POS</div>
+          <div class="navitem on">Sales History</div>
+          <div class="navitem ro">Products</div>
+          <div class="navitem ro">Stock &amp; Movements</div>
+          <div class="navitem ro">Purchases</div>
+          <div class="navitem ro">Suppliers</div>
+          <div class="navitem on">Customers</div>
+          <div class="navitem gone">User Management</div>
+          <div class="navitem gone">Store Settings</div>
+        </div>
+      </div>
+      <div class="footnote">Permissions: <span class="mono">IsAdmin</span> &bull; <span class="mono">IsAdminOrManagerOrReadOnly</span> &bull; <span class="mono">IsAuthenticated</span></div>
+    </section>
+
+  </div><!-- /player -->
+
+  <div class="controls">
+    <div class="segments" id="segments" role="tablist" aria-label="Scenes"></div>
+    <div class="transport">
+      <button class="tbtn" id="prev" aria-label="Previous scene" title="Previous (&larr;)">
+        <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+      </button>
+      <button class="tbtn play" id="playpause" aria-label="Pause" title="Play / pause (Space)">
+        <svg id="ppicon" viewBox="0 0 24 24"><path d="M8 5h3v14H8zm5 0h3v14h-3z"/></svg>
+      </button>
+      <button class="tbtn" id="next" aria-label="Next scene" title="Next (&rarr;)">
+        <svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 6l8.5 6L6 18z"/></svg>
+      </button>
+      <span class="counter" id="counter">01 / 09</span>
+    </div>
+    <p class="caption" id="caption" aria-live="polite"></p>
+  </div>
+
+  <div class="notes">
+    <div>
+      <h4>Turn this into a video</h4>
+      <ol>
+        <li>Open this page full-screen in one browser tab.</li>
+        <li>Start a screen recorder (<b>OBS</b>, <b>Win&nbsp;+&nbsp;G</b>, or Loom) on that tab.</li>
+        <li>Press <b>&#8617;&nbsp;replay from scene 1</b> and let it auto-play through once (&approx;70&nbsp;s).</li>
+        <li>Stop the recording &mdash; that file is your demo video.</li>
+      </ol>
+    </div>
+    <div>
+      <h4>Recording the real app instead</h4>
+      <ul>
+        <li>Run <b>seed_demo_data</b>, start both servers.</li>
+        <li>Follow <b>DEMO_SCRIPT.md</b> in the repo &mdash; scene-by-scene clicks and narration.</li>
+        <li>This reel mirrors that script's nine scenes and the same seeded figures.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var scenes = Array.prototype.slice.call(document.querySelectorAll('.scene'));
+    var segWrap = document.getElementById('segments');
+    var caption = document.getElementById('caption');
+    var counter = document.getElementById('counter');
+    var ppBtn = document.getElementById('playpause');
+    var ppIcon = document.getElementById('ppicon');
+    var PLAY_PATH = 'M8 5v14l11-7z';
+    var PAUSE_PATH = 'M8 5h3v14H8zm5 0h3v14h-3z';
+
+    var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var idx = 0;
+    var playing = !reduced;
+    var elapsed = 0;
+    var last = 0;
+    var raf = null;
+
+    // build segments
+    var fills = [];
+    scenes.forEach(function (s, i) {
+      var b = document.createElement('button');
+      b.className = 'seg';
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-label', 'Scene ' + (i + 1));
+      var f = document.createElement('span');
+      f.className = 'fill';
+      b.appendChild(f);
+      b.addEventListener('click', function () { go(i); });
+      segWrap.appendChild(b);
+      fills.push(f);
+    });
+
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+    function durOf(i) { return parseInt(scenes[i].getAttribute('data-dur'), 10) || 6000; }
+
+    function render() {
+      scenes.forEach(function (s, i) { s.setAttribute('data-active', i === idx ? 'true' : 'false'); });
+      fills.forEach(function (f, i) {
+        f.style.width = i < idx ? '100%' : (i > idx ? '0%' : (elapsed / durOf(idx) * 100) + '%');
+      });
+      counter.textContent = pad(idx + 1) + ' / ' + pad(scenes.length);
+      caption.innerHTML = scenes[idx].getAttribute('data-caption') || '';
+    }
+
+    function go(i, keepPlaying) {
+      idx = (i + scenes.length) % scenes.length;
+      elapsed = 0;
+      last = 0;
+      render();
+      if (!keepPlaying && !playing && !reduced) setPlaying(true);
+    }
+
+    function setPlaying(v) {
+      playing = v;
+      ppBtn.setAttribute('aria-label', v ? 'Pause' : 'Play');
+      ppIcon.setAttribute('d', v ? PAUSE_PATH : PLAY_PATH);
+      if (v) { last = 0; loop(0); } else if (raf) { cancelAnimationFrame(raf); raf = null; }
+    }
+
+    function loop(ts) {
+      if (!playing) return;
+      if (!last) last = ts;
+      var dt = ts - last;
+      last = ts;
+      elapsed += dt;
+      var dur = durOf(idx);
+      if (elapsed >= dur) {
+        if (idx === scenes.length - 1) { elapsed = dur; render(); setPlaying(false); return; }
+        go(idx + 1, true);
+      } else {
+        fills[idx].style.width = (elapsed / dur * 100) + '%';
+      }
+      raf = requestAnimationFrame(loop);
+    }
+
+    document.getElementById('prev').addEventListener('click', function () { go(idx - 1); });
+    document.getElementById('next').addEventListener('click', function () { go(idx + 1); });
+    ppBtn.addEventListener('click', function () {
+      if (!playing && idx === scenes.length - 1 && elapsed >= durOf(idx)) { go(0, true); setPlaying(true); return; }
+      setPlaying(!playing);
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); ppBtn.click(); }
+      else if (e.key === 'ArrowRight') { go(idx + 1); }
+      else if (e.key === 'ArrowLeft') { go(idx - 1); }
+    });
+
+    render();
+    if (playing) setPlaying(true);
+  })();
+</script>

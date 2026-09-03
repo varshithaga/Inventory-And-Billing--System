@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Inventory &amp; Billing System — Walkthrough</title>
+<style>
+  :root { --violet:#7c3aed; --deep:#2e1065; --accent:#c4b5fd; --bg:#1a0b33; --panel:#241046; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: radial-gradient(circle at 50% 0%, #2f1360, var(--bg));
+    color: #ede9fe; font-family: "Segoe UI", system-ui, sans-serif;
+    display: flex; flex-direction: column; min-height: 100vh;
+  }
+  header {
+    padding: 14px 22px; display: flex; align-items: center; gap: 14px;
+    border-bottom: 1px solid rgba(255,255,255,.1);
+  }
+  header h1 { font-size: 17px; margin: 0; font-weight: 800; letter-spacing: -.01em; }
+  header h1 span { color: var(--accent); }
+  .count { margin-left: auto; font-size: 13px; color: #b9a7e6; font-variant-numeric: tabular-nums; }
+  main {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 22px; position: relative; overflow: hidden;
+  }
+  figure {
+    margin: 0; width: min(1200px, 100%); background: var(--panel);
+    border: 1px solid rgba(255,255,255,.12); border-radius: 14px; overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,.5);
+  }
+  .frame { max-height: 68vh; overflow: auto; background: #12081f; }
+  .frame img { display: block; width: 100%; }
+  figcaption {
+    padding: 12px 18px; display: flex; align-items: baseline; gap: 12px;
+    border-top: 1px solid rgba(255,255,255,.1);
+    background: linear-gradient(var(--deep), #1c0a3a);
+  }
+  figcaption b { font-size: 15px; }
+  figcaption span { font-size: 13px; color: #b9a7e6; }
+  .nav {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    border: none; background: rgba(46,16,101,.8); color: #fff; font-size: 22px;
+    width: 46px; height: 46px; border-radius: 50%; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav:hover { background: var(--violet); }
+  .nav.prev { left: 26px; } .nav.next { right: 26px; }
+  footer {
+    padding: 12px 22px; display: flex; align-items: center; gap: 14px;
+    border-top: 1px solid rgba(255,255,255,.1); font-size: 13px;
+  }
+  button.ctl {
+    border: 1px solid rgba(255,255,255,.22); background: transparent; color: #ede9fe;
+    padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
+  }
+  button.ctl:hover { border-color: var(--violet); background: rgba(124,58,237,.28); }
+  .bar { flex: 1; height: 4px; background: rgba(255,255,255,.14); border-radius: 2px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s; }
+  .hint { color: #9d8bc9; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Inventory &amp; <span>Billing System</span> — full application walkthrough</h1>
+  <div class="count"><span id="idx">1</span> / <span id="total">12</span></div>
+</header>
+
+<main>
+  <button class="nav prev" id="prev" aria-label="Previous">&#8249;</button>
+  <figure>
+    <div class="frame"><img id="shot" alt="" /></div>
+    <figcaption><b id="title"></b><span id="sub"></span></figcaption>
+  </figure>
+  <button class="nav next" id="next" aria-label="Next">&#8250;</button>
+</main>
+
+<footer>
+  <button class="ctl" id="play">Pause</button>
+  <div class="bar"><i id="fill"></i></div>
+  <span class="hint">&#8592; &#8594; arrows to navigate &nbsp;&middot;&nbsp; Space to play/pause</span>
+</footer>
+
+<script>
+const SLIDES = [
+  ["01-login", "Sign in", "JWT login — Admin / Manager / Staff roles"],
+  ["02-signup", "Admin sign-up", "Self-serve first-admin account at /signup"],
+  ["03-dashboard", "Executive Dashboard", "Revenue tiles, low-stock warnings, recent invoices, payment split"],
+  ["04-billing", "Billing / POS", "Point-of-sale terminal — product search, GST breakdown, split payments"],
+  ["05-sales", "Sales History", "Completed / draft / cancelled sales; re-download GST invoice PDFs"],
+  ["06-products", "Products", "Catalog with price, GST rate, HSN, low-stock threshold; category tree"],
+  ["07-stock", "Stock & Movements", "Per-branch stock levels and the full in/out/adjustment audit ledger"],
+  ["08-purchases", "Purchases", "Supplier purchase orders — items, GST, amount paid vs. balance due"],
+  ["09-suppliers", "Suppliers", "Supplier directory with contact person, GSTIN and address"],
+  ["10-customers", "Customers", "Contact info, outstanding balance ledger, loyalty points"],
+  ["11-user-management", "User Management", "Create staff, assign role & branch, activate / deactivate"],
+  ["12-settings", "Store Settings", "Shop profile, invoice prefix & next number, tax-inclusive toggle"],
+];
+const DWELL = 2800;
+let i = 0, playing = true, t0 = 0, raf = null;
+const $ = (id) => document.getElementById(id);
+$("total").textContent = SLIDES.length;
+
+function render() {
+  const [file, title, sub] = SLIDES[i];
+  $("shot").src = "screenshots/" + file + ".jpg";
+  $("shot").alt = title;
+  $("title").textContent = title;
+  $("sub").textContent = sub;
+  $("idx").textContent = i + 1;
+  document.querySelector(".frame").scrollTop = 0;
+}
+function go(n) { i = (n + SLIDES.length) % SLIDES.length; render(); restart(); }
+function tick() {
+  if (!playing) return;
+  const p = Math.min(1, (performance.now() - t0) / DWELL);
+  $("fill").style.width = (p * 100) + "%";
+  if (p >= 1) { go(i + 1); return; }
+  raf = requestAnimationFrame(tick);
+}
+function restart() {
+  cancelAnimationFrame(raf);
+  t0 = performance.now();
+  $("fill").style.width = "0%";
+  if (playing) raf = requestAnimationFrame(tick);
+}
+function setPlay(v) { playing = v; $("play").textContent = v ? "Pause" : "Play"; restart(); }
+
+$("prev").onclick = () => go(i - 1);
+$("next").onclick = () => go(i + 1);
+$("play").onclick = () => setPlay(!playing);
+document.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowLeft") go(i - 1);
+  else if (e.key === "ArrowRight") go(i + 1);
+  else if (e.key === " ") { e.preventDefault(); setPlay(!playing); }
+});
+
+render();
+restart();
+</script>
+</body>
+</html>

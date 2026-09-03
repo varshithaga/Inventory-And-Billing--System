@@ -11,22 +11,31 @@ dashboard.** Role-based access separates what an Admin, a Manager and a Cashier 
 
 ## Walkthrough
 
-An animated tour of the whole app — an 11-scene loop covering sign-in, the dashboard, the
-Products / Purchases / Stock ledger / Sales / Customers tables, the POS checkout, the GST
-invoice PDF, Store Settings and User Management — using the same layout, navigation and
-`seed_demo_data` figures as the running application.
+A full tour of the running application — every screen, captured live from the app with
+`seed_demo_data` loaded: sign-in, admin sign-up, the dashboard, Billing / POS, Sales
+History, Products, Stock & Movements, Purchases, Suppliers, Customers, User Management
+and Store Settings.
+
+| Format | File | Notes |
+|--------|------|-------|
+| **Video** | [`docs/walkthrough.mp4`](docs/walkthrough.mp4) | 1080p H.264, ~36 s — upload / share anywhere |
+| **Slideshow** | [`docs/slideshow.html`](docs/slideshow.html) | open in a browser — autoplay, arrow-key navigation |
+| **Screenshots** | [`docs/screenshots/`](docs/screenshots/) | 12 full-page images, one per screen (`docs/screenshots-4k/` = same set capped at 4000&nbsp;px) |
+| **Animated SVG** | [`docs/demo.svg`](docs/demo.svg) | lightweight, plays inline on GitHub |
 
 ![Inventory & Billing System walkthrough](docs/demo.svg)
 
-_Animated SVG — plays automatically on GitHub; open [`docs/demo.svg`](docs/demo.svg) directly
-if your viewer doesn't animate it. Regenerate with `python docs/gen_demo.py` (stdlib only)
-after changing the seed data._
+### Regenerating
 
-> Prefer a real screen recording? Start both servers (below), run `seed_demo_data`, then
-> follow the scene-by-scene shot list and narration in [`DEMO_SCRIPT.md`](./DEMO_SCRIPT.md)
-> and capture the browser with your OS recorder (Windows: **Win + Alt + R**). An interactive
-> version of this reel is also at [`demo/walkthrough.html`](demo/walkthrough.html) — open it
-> in a browser and screen-record the tab.
+- **Screenshots + video + slideshow** — start both servers and run `seed_demo_data`
+  (see below), then from the repo root run `python docs/capture.py`. It creates a
+  throwaway `_capture_bot` admin, installs `puppeteer-core` + `ffmpeg-static` into
+  `docs/` on first run, drives headless Chrome through every route, and deletes the
+  temp user afterwards.
+- **Animated SVG** — `python docs/gen_demo.py` (stdlib only) after changing seed data.
+- The scene-by-scene narration script for a hand-recorded video is in
+  [`DEMO_SCRIPT.md`](./DEMO_SCRIPT.md); a stylised reel is at
+  [`demo/walkthrough.html`](demo/walkthrough.html).
 
 ---
 
